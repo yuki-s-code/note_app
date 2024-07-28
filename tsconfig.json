@@ -17,11 +17,10 @@
     "jsx": "react-jsx",
     "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src", "electron"],
+  "exclude": ["node_modules"], // node_modules ディレクトリを除外
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,168 +1,116 @@
+//useMutateFolderBlocks.tsx
+
 import axios from "axios";
 import { useQueryClient, useMutation } from "react-query";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/notes";
 
 // 新しいAxiosインスタンスを作成
 const axiosInstance = axios.create({
   baseURL: apiUrl,
   headers: {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "http://localhost:8088", // バックエンドのオリジンに合わせて設定
   },
 });
 
 // eslint-disable-next-line import/prefer-default-export
 export const useMutateFolderBlocks = () => {
   const queryClient = useQueryClient();
-  const addRootCreateFolder = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/add_root_create_folder`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
+  const handleMutation = (mutationFn: any, queryKey: string[]) => {
+    return useMutation(mutationFn, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey });
       },
-    }
-  );
-  const addRootCreateNote = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/add_root_create_note`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
+      onError: (error: any) => {
+        console.error("Mutation error:", error);
+        // 必要に応じてユーザーに通知するロジックを追加
       },
-    }
-  );
-  const addCreateFolder = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/add_create_folder`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
-  );
-  const addCreateNote = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/add_create_note`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
+    });
+  };
+  const addRootCreateFolder = handleMutation(
+    (folder: any) =>
+      axiosInstance.post(`${apiUrl}/add_root_create_folder`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const updateTreeNote = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/update_tree`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
+  const addRootCreateNote = handleMutation(
+    (folder: any) =>
+      axiosInstance.post(`${apiUrl}/add_root_create_note`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const updateTreeIcon = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/update_tree_icon`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
+  const addCreateFolder = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/add_create_folder`, folder),
+    ["folderBlocks", "tree"]
+  );
+  const addCreateNote = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/add_create_note`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const updateTreeImage = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/update_tree_image`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
+  const updateTreeNote = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/update_tree`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const updateTreeBookmarked = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/update_tree_bookmarks`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
+  const updateTreeIcon = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/update_tree_icon`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const updateTreeSort = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/update_tree_sort`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks", "tree"] });
-      },
-    }
+  const updateTreeImage = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/update_tree_image`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const trashInsert = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/trash_insert`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({
-          queryKey: ["folderBlocks", "tree"],
-        });
-      },
-    }
+  const updateTreeBookmarked = handleMutation(
+    (folder: any) =>
+      axiosInstance.post(`${apiUrl}/update_tree_bookmarks`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const folderBlocksContentsMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/edited_folder_contents`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks"] });
-      },
-    }
+  const updateTreeType = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/update_tree_type`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const dataSheetMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/edited_data_sheet`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks"] });
-      },
-    }
+  const updateTreeSort = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/update_tree_sort`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const excalidrawMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/edited_excalidraw`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks"] });
-      },
-    }
+  const trashInsert = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/trash_insert`, folder),
+    ["folderBlocks", "tree"]
   );
 
-  const newBlockMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/new_blocks`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks"] });
-      },
-    }
+  const folderBlocksContentsMutation = handleMutation(
+    (folder: any) =>
+      axiosInstance.post(`${apiUrl}/edited_folder_contents`, folder),
+    ["folderBlocks"]
   );
 
-  const selectParentMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/select_parent`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folder"] });
-      },
-    }
+  const dataSheetMutation = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/edited_data_sheet`, folder),
+    ["folderBlocks"]
   );
-  const selectDeleteMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/select_delete`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folder"] });
-      },
-    }
+
+  const newBlockMutation = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/new_blocks`, folder),
+    ["folderBlocks"]
   );
-  const addJournalsDataMutation = useMutation(
-    (folder) => axiosInstance.post(`${apiUrl}/add_journals`, folder),
-    {
-      onSuccess: (res: any) => {
-        queryClient.invalidateQueries({ queryKey: ["folderBlocks"] });
-      },
-    }
+
+  const selectParentMutation = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/select_parent`, folder),
+    ["folder"]
+  );
+  const selectDeleteMutation = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/select_delete`, folder),
+    ["folder"]
+  );
+  const addJournalsDataMutation = handleMutation(
+    (folder: any) => axiosInstance.post(`${apiUrl}/add_journals`, folder),
+    ["folderBlocks"]
   );
 
   return {
@@ -174,11 +122,11 @@ export const useMutateFolderBlocks = () => {
     updateTreeIcon,
     updateTreeImage,
     updateTreeBookmarked,
+    updateTreeType,
     updateTreeSort,
     trashInsert,
     folderBlocksContentsMutation,
     dataSheetMutation,
-    excalidrawMutation,
     newBlockMutation,
     selectParentMutation,
     selectDeleteMutation,

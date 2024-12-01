@@ -1,3 +1,5 @@
+//BoardList.tsx
+
 import { FC, useEffect, useState } from "react";
 import BoardItem from "./BoardItem";
 import { useQueryAllBoard } from "../../libs/hooks/boardHook/useQueryBoard";
@@ -7,6 +9,7 @@ import { Error } from "../atoms/fetch/Error";
 const BoardList: FC = () => {
   const [page, setPage] = useState(20);
   const { data, status, refetch }: any = useQueryAllBoard(page);
+  console.log(data);
 
   useEffect(() => {
     refetch();

@@ -1,8 +1,9 @@
+//CalendarApp.tsx
+
 import { isSameDay, format } from "date-fns";
 import { DayPicker } from "react-day-picker";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "react-day-picker/dist/style.css";
-import { Link } from "react-router-dom";
 
 export default function CalendarApp({
   selected,
@@ -16,10 +17,12 @@ export default function CalendarApp({
   const modifiers = {
     selectedDay: (day: Date) => selected && isSameDay(day, selected),
   };
-  const onTheSelect = (date: Date) => {
-    const formattedDate = format(date, "yyyy-MM-dd");
-    navigate(`/root/note/journals/${formattedDate}`);
-    onSelect(date);
+  const onTheSelect = (date: Date | undefined) => {
+    if (date) {
+      const formattedDate = format(date, "yyyy-MM-dd");
+      navigate(`/root/note/journals/${formattedDate}`);
+      onSelect(date);
+    }
   };
   return (
     <div>

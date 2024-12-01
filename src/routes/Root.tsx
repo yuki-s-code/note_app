@@ -1,3 +1,5 @@
+// Root.tsx
+
 import React, { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import {
@@ -13,7 +15,6 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import {
-  Check,
   ChevronDownIcon,
   ChevronRightIcon,
   Cog,
@@ -31,16 +32,17 @@ import { BotTop } from "@/components/bot/BotTop";
 import { BotSetting } from "@/components/bot/BotSetting";
 
 export const Root = () => {
-  const [open, setOpen] = useState(0);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editedOpen, setEditedOpen]: any = useState(false);
+  const [open, setOpen] = useState<number>(0);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [editedOpen, setEditedOpen] = useState<boolean>(false);
 
-  const handleOpen = (value: any) => {
+  const handleOpen = (value: number) => {
     setOpen(open === value ? 0 : value);
   };
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
+
   return (
     <>
       {!editedOpen ? (
@@ -49,13 +51,13 @@ export const Root = () => {
             <div className="flex flex-col">
               <div>
                 <IconButton
-                  placeholder="true"
+                  placeholder
                   onPointerEnterCapture
                   onPointerLeaveCapture
-                  className=" opacity-40"
+                  onClick={openDrawer}
+                  className="opacity-40"
                   variant="text"
                   size="lg"
-                  onClick={openDrawer}
                 >
                   {isDrawerOpen ? (
                     <X className="h-6 w-6 stroke-2" />
@@ -64,14 +66,15 @@ export const Root = () => {
                   )}
                 </IconButton>
                 <Drawer
-                  placeholder="true"
+                  placeholder
                   onPointerEnterCapture
                   onPointerLeaveCapture
                   open={isDrawerOpen}
                   onClose={closeDrawer}
+                  className="overflow-y-auto"
                 >
                   <Card
-                    placeholder="true"
+                    placeholder
                     onPointerEnterCapture
                     onPointerLeaveCapture
                     color="transparent"
@@ -81,7 +84,7 @@ export const Root = () => {
                     <div className="mb-2 flex items-center gap-4 p-4">
                       <img src={MainLogo} alt="brand" className="h-8 w-8" />
                       <Typography
-                        placeholder="true"
+                        placeholder
                         onPointerEnterCapture
                         onPointerLeaveCapture
                         variant="h5"
@@ -91,12 +94,12 @@ export const Root = () => {
                       </Typography>
                     </div>
                     <List
-                      placeholder="true"
+                      placeholder
                       onPointerEnterCapture
                       onPointerLeaveCapture
                     >
                       <Accordion
-                        placeholder="true"
+                        placeholder
                         onPointerEnterCapture
                         onPointerLeaveCapture
                         open={open === 1}
@@ -111,28 +114,28 @@ export const Root = () => {
                       >
                         <Link to="/root">
                           <ListItem
-                            placeholder="true"
+                            placeholder
                             onPointerEnterCapture
                             onPointerLeaveCapture
                             className="p-0"
                             selected={open === 1}
                           >
                             <AccordionHeader
-                              placeholder="true"
+                              placeholder
                               onPointerEnterCapture
                               onPointerLeaveCapture
                               onClick={() => handleOpen(1)}
                               className="border-b-0 p-3"
                             >
                               <ListItemPrefix
-                                placeholder="true"
+                                placeholder
                                 onPointerEnterCapture
                                 onPointerLeaveCapture
                               >
                                 <Presentation className="h-5 w-5" />
                               </ListItemPrefix>
                               <Typography
-                                placeholder="true"
+                                placeholder
                                 onPointerEnterCapture
                                 onPointerLeaveCapture
                                 color="blue-gray"
@@ -146,18 +149,18 @@ export const Root = () => {
 
                         <AccordionBody className="py-1">
                           <List
-                            placeholder="true"
+                            className="p-0"
+                            placeholder
                             onPointerEnterCapture
                             onPointerLeaveCapture
-                            className="p-0"
                           >
                             <ListItem
-                              placeholder="true"
+                              placeholder
                               onPointerEnterCapture
                               onPointerLeaveCapture
                             >
                               <ListItemPrefix
-                                placeholder="true"
+                                placeholder
                                 onPointerEnterCapture
                                 onPointerLeaveCapture
                               >
@@ -169,12 +172,12 @@ export const Root = () => {
                               分析
                             </ListItem>
                             <ListItem
-                              placeholder="true"
+                              placeholder
                               onPointerEnterCapture
                               onPointerLeaveCapture
                             >
                               <ListItemPrefix
-                                placeholder="true"
+                                placeholder
                                 onPointerEnterCapture
                                 onPointerLeaveCapture
                               >
@@ -191,12 +194,12 @@ export const Root = () => {
                       <hr className="my-2 border-blue-gray-50" />
                       <Link to="profile">
                         <ListItem
-                          placeholder="true"
+                          placeholder
                           onPointerEnterCapture
                           onPointerLeaveCapture
                         >
                           <ListItemPrefix
-                            placeholder="true"
+                            placeholder
                             onPointerEnterCapture
                             onPointerLeaveCapture
                           >
@@ -207,12 +210,12 @@ export const Root = () => {
                       </Link>
                       <Link to="news">
                         <ListItem
-                          placeholder="true"
+                          placeholder
                           onPointerEnterCapture
                           onPointerLeaveCapture
                         >
                           <ListItemPrefix
-                            placeholder="true"
+                            placeholder
                             onPointerEnterCapture
                             onPointerLeaveCapture
                           >
@@ -221,30 +224,14 @@ export const Root = () => {
                           News
                         </ListItem>
                       </Link>
-                      <Link to="task">
-                        <ListItem
-                          placeholder="true"
-                          onPointerEnterCapture
-                          onPointerLeaveCapture
-                        >
-                          <ListItemPrefix
-                            placeholder="true"
-                            onPointerEnterCapture
-                            onPointerLeaveCapture
-                          >
-                            <Check className="h-5 w-5" />
-                          </ListItemPrefix>
-                          Task
-                        </ListItem>
-                      </Link>
                       <Link to="message">
                         <ListItem
-                          placeholder="true"
+                          placeholder
                           onPointerEnterCapture
                           onPointerLeaveCapture
                         >
                           <ListItemPrefix
-                            placeholder="true"
+                            placeholder
                             onPointerEnterCapture
                             onPointerLeaveCapture
                           >
@@ -255,12 +242,12 @@ export const Root = () => {
                       </Link>
                       <Link to="note">
                         <ListItem
-                          placeholder="true"
+                          placeholder
                           onPointerEnterCapture
                           onPointerLeaveCapture
                         >
                           <ListItemPrefix
-                            placeholder="true"
+                            placeholder
                             onPointerEnterCapture
                             onPointerLeaveCapture
                           >
@@ -271,12 +258,12 @@ export const Root = () => {
                       </Link>
                       <hr className="my-2 border-blue-gray-50" />
                       <ListItem
-                        placeholder="true"
+                        placeholder
                         onPointerEnterCapture
                         onPointerLeaveCapture
                       >
                         <ListItemPrefix
-                          placeholder="true"
+                          placeholder
                           onPointerEnterCapture
                           onPointerLeaveCapture
                         >
@@ -285,12 +272,12 @@ export const Root = () => {
                         Settings
                       </ListItem>
                       <ListItem
-                        placeholder="true"
+                        placeholder
                         onPointerEnterCapture
                         onPointerLeaveCapture
                       >
                         <ListItemPrefix
-                          placeholder="true"
+                          placeholder
                           onPointerEnterCapture
                           onPointerLeaveCapture
                         >
@@ -302,7 +289,7 @@ export const Root = () => {
                   </Card>
                 </Drawer>
               </div>
-              <div className=" z-50">
+              <div className="z-50">
                 <BotTop editedOpen={editedOpen} setEditedOpen={setEditedOpen} />
               </div>
             </div>
@@ -317,3 +304,5 @@ export const Root = () => {
     </>
   );
 };
+
+export default Root;

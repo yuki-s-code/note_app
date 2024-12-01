@@ -1,21 +1,43 @@
+// App.tsx
+
+import React, { Suspense } from "react";
 import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "react-query";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import "tailwindcss/tailwind.css";
+import { DefaultSkeleton } from "./components/atoms/fetch/DefaultSkeleton";
+import { Toaster } from "react-hot-toast"; // Toaster をインポート
+
+// // コンポーネントの遅延読み込み
+// const Board = lazy(() => import("./components/board/Board"));
+// const Note = lazy(() => import("./components/note/Note"));
+// const HomePage = lazy(() => import("./components/topage/Page1"));
+// const ErrorPage = lazy(() => import("./components/ErrorPage"));
+// const Root = lazy(() => import("./routes/Root"));
+// const Login = lazy(() => import("./routes/Login"));
+// const UserCreate = lazy(() => import("./components/login/UserCreate"));
+// const MyPage = lazy(() => import("./components/topage/MyPage"));
+// const MessageIlust = lazy(() => import("./components/message/MessageIlust"));
+// const NoteApp = lazy(() => import("./components/note/NoteApp"));
+// const JournalApp = lazy(() => import("./components/note/calendar/JournalApp"));
+// const Drawer = lazy(() => import("./components/note/drawer/Drawer"));
+// const JournalDrawer = lazy(
+//   () => import("./components/note/calendar/JournalDrawer")
+// );
+
 import Board from "./components/board/Board";
-import TaskApp from "./components/task/TaskApp";
 import Note from "./components/note/Note";
-import HomePage from "./components/topage/Page1"; // Page1をHomePageにリネーム
+import HomePage from "./components/topage/Page1";
 import ErrorPage from "./components/ErrorPage";
-import { Root } from "./routes/Root";
+import Root from "./routes/Root";
 import Login from "./routes/Login";
 import UserCreate from "./components/login/UserCreate";
 import MyPage from "./components/topage/MyPage";
-import { MessageIlust } from "./components/message/MessageIlust";
-import { NoteApp } from "./components/note/NoteApp";
-import { JournalApp } from "./components/note/calendar/JournalApp";
-import { Drawer } from "./components/note/drawer/Drawer";
-import { JournalDrawer } from "./components/note/calendar/JournalDrawer";
+import MessageIlust from "./components/message/MessageIlust";
+import NoteApp from "./components/note/NoteApp";
+import JournalApp from "./components/note/calendar/JournalApp";
+import Drawer from "./components/note/drawer/Drawer";
+import JournalDrawer from "./components/note/calendar/JournalDrawer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,37 +48,86 @@ const queryClient = new QueryClient({
   },
 });
 
-function ErrorFallback({ error }: any) {
-  return <div>エラーが発生しました: {error.message}</div>;
-}
+// エラーフォールバックコンポーネント
+const ErrorFallback: React.FC<FallbackProps> = ({
+  error,
+  resetErrorBoundary,
+}) => (
+  <div className="error-fallback flex flex-col items-center justify-center min-h-screen bg-red-100">
+    <p className="text-red-700">エラーが発生しました: {error.message}</p>
+    <button
+      onClick={resetErrorBoundary}
+      className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+    >
+      リロード
+    </button>
+  </div>
+);
 
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="*" element={<ErrorPage />} />
-            <Route path="/root" element={<Root />}>
-              <Route index element={<HomePage />} /> {/* HomePageに変更 */}
-              <Route path="sign" element={<UserCreate />} />
-              <Route path="profile" element={<MyPage />} />
-              <Route path="news" element={<Board />} />
-              <Route path="task" element={<TaskApp />} />
-              <Route path="message" element={<MessageIlust />} />
-              <Route path="note" element={<Note />}>
-                <Route path=":noteId" element={<NoteApp />}>
-                  <Route path=":mentionId" element={<Drawer />} />
-                </Route>
-                <Route path="journals/:ymday" element={<JournalApp />}>
-                  <Route path=":mentionId" element={<JournalDrawer />} />
-                </Route>
-              </Route>
-            </Route>
-          </Routes>
-        </ErrorBoundary>
-      </Router>
-    </QueryClientProvider>
-  );
-}
+// アプリケーションのルーティング設定
+const AppRoutes: React.FC = () => (
+  <Routes>
+    <Route path="/" element={<Login />} />
+    <Route path="*" element={<ErrorPage />} />
+    <Route path="/root" element={<Root />}>
+      <Route index element={<HomePage />} />
+      <Route path="sign" element={<UserCreate />} />
+      <Route path="profile" element={<MyPage />} />
+      <Route path="news" element={<Board />} />
+      <Route path="message" element={<MessageIlust />} />
+      <Route path="note" element={<Note />}>
+        <Route path=":noteId" element={<NoteApp />}>
+          <Route path=":mentionId" element={<Drawer />} />
+        </Route>
+        <Route path="journals/:ymday" element={<JournalApp />}>
+          <Route path=":mentionId" element={<JournalDrawer />} />
+        </Route>
+      </Route>
+    </Route>
+  </Routes>
+);
+
+const App: React.FC = () => (
+  <QueryClientProvider client={queryClient}>
+    <Router>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <Suspense
+          fallback={
+            <div className="w-10/12">
+              <DefaultSkeleton />
+            </div>
+          }
+        >
+          <AppRoutes />
+        </Suspense>
+      </ErrorBoundary>
+    </Router>
+    <Toaster // Toaster を配置
+      position="top-right"
+      reverseOrder={false}
+      toastOptions={{
+        style: {
+          borderRadius: "8px",
+          background: "#333",
+          color: "#fff",
+        },
+        success: {
+          duration: 3000,
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        },
+        error: {
+          duration: 5000,
+          style: {
+            background: "#f44336",
+            color: "#fff",
+          },
+        },
+      }}
+    />
+  </QueryClientProvider>
+);
+
+export default App;

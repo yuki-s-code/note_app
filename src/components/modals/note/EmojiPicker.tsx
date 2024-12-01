@@ -1,35 +1,73 @@
-import { useState } from "react";
-import Picker from "@emoji-mart/react";
-import data from "@emoji-mart/data";
+// EmojiPicker.tsx
 
-const EmojiPicker = ({ icon, onChange }: any) => {
+import { KeyboardEvent, useState } from "react";
+import EmojiPickerReact, { EmojiClickData } from "emoji-picker-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// ピッカーのアニメーションバリアント
+const pickerVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: -10 },
+  visible: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.95, y: -10 },
+};
+
+// アイコンのアニメーションバリアント
+const iconVariants = {
+  initial: { scale: 1 },
+  tap: { scale: 0.9 },
+};
+
+const EmojiPicker = ({ icon, onChange, sideItem }: any) => {
   const [isShowPicker, setIsShowPicker] = useState(false);
+  const togglePicker = () => setIsShowPicker((prev) => !prev);
 
-  const showPicker: any = () => setIsShowPicker(!isShowPicker);
+  const showPicker = () => setIsShowPicker((prev) => !prev);
 
-  const selectEmoji = (e: any) => {
-    const emojiCode = e.unified.split("-");
-    let codesArray: any = [];
-    emojiCode.forEach((el: any) => codesArray.push("0x" + el));
-    const emoji = String.fromCodePoint(...codesArray);
+  const selectEmoji = (emojiData: EmojiClickData, event: MouseEvent) => {
+    const emoji = emojiData.emoji;
     setIsShowPicker(false);
     onChange(emoji);
   };
+  const handleKeyPress = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      togglePicker();
+    }
+  };
+
   return (
     <>
-      <div
+      <motion.div
         className={
-          icon
-            ? " text-8xl w-24 h-24 cursor-pointer"
-            : "text-8xl cursor-pointer w-12 h-12 border-2 border-dashed"
+          sideItem
+            ? "relative text-8xl -ml-24 w-24 h-24 cursor-pointer"
+            : "relative text-8xl w-24 h-24 cursor-pointer"
         }
-        onClick={() => showPicker()}
+        onClick={showPicker}
+        variants={iconVariants}
+        initial="initial"
+        whileTap="tap"
+        aria-label="Select Emoji"
+        role="button"
+        tabIndex={0}
+        onKeyPress={handleKeyPress}
       >
         {icon}
-      </div>
-      <div className={isShowPicker ? "block absolute z-50" : "hidden"}>
-        <Picker data={data} onEmojiSelect={selectEmoji} />
-      </div>
+      </motion.div>
+      <AnimatePresence>
+        {isShowPicker && (
+          <motion.div
+            className="absolute z-50 mt-2"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={pickerVariants}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            <EmojiPickerReact onEmojiClick={selectEmoji} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

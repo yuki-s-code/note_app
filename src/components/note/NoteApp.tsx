@@ -1,3 +1,5 @@
+// NoteApp.tsx
+
 import React, { useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useAppSelector } from "@/libs/app/hooks";
@@ -15,16 +17,15 @@ export const NoteApp = () => {
   useEffect(() => {
     // mentionId の有無に応じてアニメーションを制御
     if (mentionId && peekDisplay) {
-      controls.start({ width: "50%" }); // 幅を 700px に変更
+      controls.start({ width: "50%" }); // 幅を 50% に変更
     } else {
       controls.start({ width: "100%" }); // 幅を 100% に変更
     }
-  }, [mentionId, controls, peekDisplay]); // mentionId が変更されたら再実行
-  console.log(mentionId, peekDisplay);
+  }, [mentionId, controls, peekDisplay]); // mentionId と peekDisplay が変更されたら再実行
 
   return (
-    <div>
-      {data.dataType == "sheet" ? (
+    <>
+      {data.dataType === "sheet" ? (
         <XApp />
       ) : (
         <div className={`${mentionId && peekDisplay ? "flex" : ""}`}>
@@ -35,7 +36,7 @@ export const NoteApp = () => {
           >
             <LiveBlock />
           </motion.div>
-          <div className=" sticky overflow-x-auto pl-12">
+          <div className="sticky overflow-x-auto pl-12">
             {mentionId && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }} // 初期状態: 非表示、少し縮小
@@ -50,6 +51,8 @@ export const NoteApp = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
+
+export default NoteApp;

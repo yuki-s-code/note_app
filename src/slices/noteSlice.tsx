@@ -1,12 +1,12 @@
-import { createSlice, Dispatch, PayloadAction } from "@reduxjs/toolkit";
-// eslint-disable-next-line import/no-cycle
+// noteSlice.tsx
+
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "../libs/app/store";
 import {
   CREATEISMODAL,
   SEARCHNAME,
   NOTEBLOCKS,
   COMPLEXTREEFOLDER,
-  COMPLEXTREENOTE,
   TREEIDGET,
   ITEMINDEX,
   LIVEBLOCK,
@@ -14,6 +14,7 @@ import {
   MENTIONBLOCK,
   APPDESIGN,
   MENTIONPEEK,
+  CODESTATEITEM,
 } from "../libs/types/note";
 
 export interface NoteState {
@@ -22,7 +23,6 @@ export interface NoteState {
   searchName: SEARCHNAME;
   complexAllFolder: any;
   complexFolder: COMPLEXTREEFOLDER;
-  complexNote: COMPLEXTREENOTE;
   treeIdGet: TREEIDGET;
   itemIndex: ITEMINDEX;
   liveBlock: LIVEBLOCK;
@@ -30,6 +30,7 @@ export interface NoteState {
   mentionBlock: MENTIONBLOCK;
   noteJournalOpen: APPDESIGN;
   mentionPeek: MENTIONPEEK;
+  codeState: CODESTATEITEM[];
 }
 
 const initialState: NoteState = {
@@ -55,16 +56,6 @@ const initialState: NoteState = {
     canRename: true,
     roots: true,
     bookmarks: [],
-  },
-  complexNote: {
-    root: {
-      index: "root",
-      canMove: true,
-      isFolder: true,
-      children: [],
-      data: { title: "無題", icon: "📝", image: "", type: "" },
-      canRename: true,
-    },
   },
   treeIdGet: {
     id: "",
@@ -94,6 +85,7 @@ const initialState: NoteState = {
   mentionPeek: {
     peekDisplay: true,
   },
+  codeState: [],
 };
 
 export const NoteSlice = createSlice({
@@ -124,7 +116,7 @@ export const NoteSlice = createSlice({
     resetComplexFolder: (state) => {
       state.complexFolder = initialState.complexFolder;
     },
-    setComplexAllFolder: (state, action: PayloadAction) => {
+    setComplexAllFolder: (state, action: PayloadAction<any>) => {
       state.complexAllFolder = action.payload;
     },
     resetComplexAllFolder: (state) => {
@@ -172,6 +164,12 @@ export const NoteSlice = createSlice({
     resetPeekDisplayOpen: (state) => {
       state.mentionPeek = initialState.mentionPeek;
     },
+    setAddCodeState: (state, action: PayloadAction<CODESTATEITEM>) => {
+      state.codeState.push(action.payload);
+    },
+    resetCodeState: (state) => {
+      state.codeState = initialState.codeState;
+    },
   },
 });
 
@@ -200,6 +198,8 @@ export const {
   resetNoteJournalOpen,
   setPeekDisplayOpen,
   resetPeekDisplayOpen,
+  setAddCodeState,
+  resetCodeState,
 } = NoteSlice.actions;
 
 export const selectNoteBlocks = (state: RootState) => state.note.noteBlocks;
@@ -210,16 +210,14 @@ export const selectComplexFolder = (state: RootState) =>
   state.note.complexFolder;
 export const selectComplexAllFolder = (state: RootState) =>
   state.note.complexAllFolder;
-export const selectComplexNote = (state: RootState) => state.note.complexNote;
 export const selectTreeIdGet = (state: RootState) => state.note.treeIdGet;
-
 export const selectItemIndex = (state: RootState) => state.note.itemIndex;
 export const selectLiveBlock = (state: RootState) => state.note.liveBlock;
-
 export const selectTitleId = (state: RootState) => state.note.titleId;
-
 export const selectMentionBlock = (state: RootState) => state.note.mentionBlock;
 export const selectNoteJournalOpen = (state: RootState) =>
   state.note.noteJournalOpen;
 export const selectPeekDisplay = (state: RootState) => state.note.mentionPeek;
+export const selectCodeState = (state: RootState) => state.note.codeState;
+
 export default NoteSlice.reducer;

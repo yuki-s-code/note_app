@@ -1,3 +1,5 @@
+//JournalMention.tsx
+
 import { createReactInlineContentSpec } from "@blocknote/react";
 import { useState } from "react";
 import {

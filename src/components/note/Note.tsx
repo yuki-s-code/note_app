@@ -1,3 +1,5 @@
+// Note.tsx
+
 import NoteTop from "./NoteTop";
 import { useAppDispatch, useAppSelector } from "../../libs/app/hooks";
 import {
@@ -23,104 +25,108 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Note = memo(() => {
   const dispatch = useAppDispatch();
-  const { noteId, ymday }: any = useParams();
+  const { noteId, ymday } = useParams<{ noteId?: string; ymday?: string }>();
   const { data, status, refetch }: any = useQueryTreeFolder();
-
-  // State to manage sidebar visibility
   const [showSidebar, setShowSidebar] = useState(true);
 
-  // Framer Motion Animation Variants
   const sidebarVariants = {
     open: { width: 240, transition: { type: "tween", duration: 0.5 } },
     closed: { width: 0, transition: { type: "tween", duration: 0.5 } },
   };
 
-  // Function to toggle the sidebar
-  const toggleSidebar = () => {
-    setShowSidebar(!showSidebar);
-  };
+  const toggleSidebar = useCallback(() => {
+    setShowSidebar((prev) => !prev);
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      await refetch();
-      if (data && data.docs.length) {
-        dispatch(setComplexAllFolder(data?.updatedTreeItems));
-      }
-    };
-    fetchData();
+    refetch();
+    if (data?.docs.length) {
+      dispatch(setComplexAllFolder(data.updatedTreeItems));
+    }
   }, [data, dispatch, refetch]);
 
   const items = useAppSelector(selectComplexFolder);
-  const { addRootCreateFolder, addRootCreateNote }: any =
-    useMutateFolderBlocks();
+  const { addRootCreateFolder, addRootCreateNote } = useMutateFolderBlocks();
 
   const submitItemHandler = useCallback(
-    (isFolder: any, dataType: any) => {
-      const uuid = uid();
-      dispatch(
-        setComplexFolder({
-          index: uuid,
-          canMove: true,
-          isFolder: isFolder,
-          children: [],
-          data: {
-            title: "無題",
-            icon: isFolder ? "📓" : "📝",
-            image: "",
-            type: dataType,
-          },
-          canRename: true,
-          roots: true,
-          bookmarks: [],
-        })
-      );
+    (isFolder: boolean, dataType: string) => {
+      const uuidValue = uid();
+      const newItem = {
+        index: uuidValue,
+        canMove: true,
+        isFolder,
+        children: [],
+        data: {
+          title: "無題",
+          icon: isFolder ? "📓" : "📝",
+          image: "",
+          type: dataType,
+        },
+        canRename: true,
+        roots: true,
+        bookmarks: [],
+      };
+      dispatch(setComplexFolder(newItem));
       dispatch(resetSearchName());
+
+      const payload: any = { items, uuid: uuidValue, type: dataType };
       if (isFolder) {
-        addRootCreateFolder.mutate({ items, uuid, type: dataType });
+        addRootCreateFolder.mutate(payload);
       } else {
-        addRootCreateNote.mutate({ items, uuid, type: dataType });
+        addRootCreateNote.mutate(payload);
       }
-      dispatch(setTreeIdGet({ id: uuid }));
+      dispatch(setTreeIdGet({ id: uuidValue }));
       dispatch(
-        setNoteBlocks({ id: uuid, contents: {}, pageLinks: [], user: "all" })
+        setNoteBlocks({
+          id: uuidValue,
+          contents: {},
+          pageLinks: [],
+          user: "all",
+        })
       );
     },
     [dispatch, addRootCreateFolder, addRootCreateNote, items]
   );
 
-  const submitFolderHandler = useCallback(() => {
-    submitItemHandler(true, "folder");
-  }, []);
-  const submitNoteHandler = useCallback(() => {
-    submitItemHandler(false, "note");
-  }, []);
-  const submitSheetHandler = useCallback(() => {
-    submitItemHandler(false, "sheet");
-  }, []);
+  const submitFolderHandler = useCallback(
+    () => submitItemHandler(true, "folder"),
+    [submitItemHandler]
+  );
+  const submitNoteHandler = useCallback(
+    () => submitItemHandler(false, "note"),
+    [submitItemHandler]
+  );
+  const submitSheetHandler = useCallback(
+    () => submitItemHandler(false, "sheet"),
+    [submitItemHandler]
+  );
 
   if (status === "loading") return <Loding />;
   if (status === "error") return <Error />;
 
   return (
     <div>
-      <div className=" flex">
-        <div className="absolute left-20 top-2">
-          {/* Add a button to toggle the sidebar */}
-          <div
-            onClick={toggleSidebar}
-            className="absolute p-3 rounded-full text-gray-500 bg-gray-100 opacity-40 hover:opacity-80 cursor-pointer"
-          >
-            {showSidebar ? <HiChevronDoubleLeft /> : <HiChevronDoubleRight />}
-          </div>
+      <div className="absolute left-20 top-2">
+        <div
+          onClick={toggleSidebar}
+          className="absolute p-3 rounded-full text-gray-500 bg-gray-100 opacity-40 hover:opacity-80 cursor-pointer"
+          aria-label="Toggle Sidebar"
+        >
+          {showSidebar ? <HiChevronDoubleLeft /> : <HiChevronDoubleRight />}
         </div>
+      </div>
+      <div className="flex">
         <AnimatePresence>
-          <motion.div
-            variants={sidebarVariants}
-            initial={false} // Start with initial state (false = closed)
-            animate={showSidebar ? "open" : "closed"} // Animate based on showSidebar
-          >
-            {showSidebar && <NoteTop />}
-          </motion.div>
+          {showSidebar && (
+            <motion.div
+              variants={sidebarVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+            >
+              <NoteTop />
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {noteId || ymday ? (
@@ -128,17 +134,17 @@ const Note = memo(() => {
             <Outlet />
           </div>
         ) : (
-          <div className="mt-8 w-full pl-32">
+          <div className="mt-20 w-full -ml-20">
             <Message />
-            <div className=" flex items-center justify-center gap-4 opacity-90">
+            <div className="flex items-center justify-center gap-4 opacity-90">
               <Button
                 placeholder="true"
                 onPointerEnterCapture
                 onPointerLeaveCapture
                 onClick={submitFolderHandler}
-                className=" flex items-center gap-3"
+                className="flex items-center gap-3"
               >
-                <FcFolder className=" w-6 h-6" />
+                <FcFolder className="w-6 h-6" />
                 新規フォルダー
               </Button>
               <Button
@@ -146,9 +152,9 @@ const Note = memo(() => {
                 onPointerEnterCapture
                 onPointerLeaveCapture
                 onClick={submitNoteHandler}
-                className=" flex items-center gap-3"
+                className="flex items-center gap-3"
               >
-                <FcFile className=" w-6 h-6" />
+                <FcFile className="w-6 h-6" />
                 新規ノート
               </Button>
               <Button
@@ -156,9 +162,9 @@ const Note = memo(() => {
                 onPointerEnterCapture
                 onPointerLeaveCapture
                 onClick={submitSheetHandler}
-                className=" flex items-center gap-3"
+                className="flex items-center gap-3"
               >
-                <FcDataSheet className=" w-6 h-6" />
+                <FcDataSheet className="w-6 h-6" />
                 新規データシート
               </Button>
             </div>

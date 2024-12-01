@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  // useEffect,
-  useMemo,
-  useRef,
-  // useState,
-} from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import {
   BlockNoteEditor,
   BlockNoteSchema,
@@ -12,12 +6,17 @@ import {
   uploadToTmpFilesDotOrg_DEV_ONLY,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
-  // defaultStyleSpecs,
+  locales,
 } from "@blocknote/core";
+import "@blocknote/core/fonts/inter.css";
 import "@blocknote/react/style.css";
 import {
+  BlockTypeSelectItem,
   DefaultReactSuggestionItem,
+  FormattingToolbar,
+  FormattingToolbarController,
   SuggestionMenuController,
+  blockTypeSelectItems,
   getDefaultReactSlashMenuItems,
   useCreateBlockNote,
 } from "@blocknote/react";
@@ -27,7 +26,6 @@ import { Mention } from "../Mention";
 import { useAppDispatch, useAppSelector } from "@/libs/app/hooks";
 import {
   selectComplexAllFolder,
-  selectMentionBlock,
   setComplexAllFolder,
 } from "@/slices/noteSlice";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
@@ -35,15 +33,25 @@ import EmojiPicker from "@/components/modals/note/EmojiPicker";
 import { CodeBlock, insertCode } from "@defensestation/blocknote-code";
 import {
   insertAlert,
+  insertBlockQuote,
   insertPDF,
   insertTimeItem,
   insertTodayItem,
+  insertTomorrowItem,
+  insertYesterDayItem,
 } from "../insert/InsertCustumItem";
 import { notJournalItem } from "../utils/notJournalItem";
 import { convertToIndexTitles } from "../utils/convertToIndexTItle";
 import { extractMentionedUsers } from "../utils/getData";
 import { useParams } from "react-router-dom";
 import { PDF } from "../PDF";
+import { BlockQuote } from "../BlockQuote";
+import {
+  ArrowConversionExtension,
+  DableLeftConversionExtension,
+  DableRightConversionExtension,
+} from "../utils/ArrowConversionExtension";
+import { RiAlertFill, RiDoubleQuotesL } from "react-icons/ri";
 
 export const DrawerEditor = ({ initialContent }: any) => {
   const dispatch = useAppDispatch();
@@ -147,11 +155,26 @@ export const DrawerEditor = ({ initialContent }: any) => {
     };
 
     timer.current = setTimeout(() => {
-      folderBlocksContentsMutation.mutate({
-        id: mentionId,
-        contents: JSON.parse(initial),
-        pageLinks: pageLinksChanges,
-      });
+      folderBlocksContentsMutation.mutate(
+        {
+          id: mentionId,
+          contents: JSON.parse(initial),
+          pageLinks: pageLinksChanges,
+        },
+        {
+          onSuccess: () => {
+            console.log("保存できました");
+          },
+          onError: (error: any) => {
+            // エラーがオブジェクトの場合とメッセージが存在しない場合に対応
+            const errorMessage =
+              error?.response?.data?.message ||
+              error.message ||
+              "保存に失敗しました。";
+            alert(`保存に失敗しました: ${errorMessage}`);
+          },
+        }
+      );
     }, 500);
   }, []);
 
@@ -162,8 +185,11 @@ export const DrawerEditor = ({ initialContent }: any) => {
       // Adds the Alert block.
       alert: Alert,
       //@ts-ignore
-      procode: CodeBlock,
+      blockquote: BlockQuote,
+      //@ts-ignore
       pdf: PDF,
+      //@ts-ignore
+      procode: CodeBlock,
     },
     inlineContentSpecs: {
       // Adds all default inline content.
@@ -181,13 +207,19 @@ export const DrawerEditor = ({ initialContent }: any) => {
       //@ts-ignore
       insertTodayItem(editor),
       //@ts-ignore
+      insertTomorrowItem(editor),
+      //@ts-ignore
+      insertYesterDayItem(editor),
+      //@ts-ignore
       insertTimeItem(editor),
       //@ts-ignore
       insertAlert(editor),
       //@ts-ignore
-      insertCode(),
+      insertBlockQuote(editor),
       //@ts-ignore
       insertPDF(editor),
+      //@ts-ignore
+      insertCode(editor),
     ],
     []
   );
@@ -216,6 +248,14 @@ export const DrawerEditor = ({ initialContent }: any) => {
       schema,
       initialContent: initialContent,
       uploadFile: uploadToTmpFilesDotOrg_DEV_ONLY,
+      _tiptapOptions: {
+        extensions: [
+          ArrowConversionExtension,
+          DableRightConversionExtension,
+          DableLeftConversionExtension,
+        ],
+      },
+      dictionary: locales.ja,
     },
     []
   );
@@ -245,7 +285,29 @@ export const DrawerEditor = ({ initialContent }: any) => {
           onChange={() => onContentChange(editor.document)}
           theme={"light"}
           slashMenu={false}
+          formattingToolbar={false}
         >
+          <FormattingToolbarController
+            formattingToolbar={() => (
+              <FormattingToolbar
+                blockTypeSelectItems={[
+                  ...blockTypeSelectItems(editor.dictionary),
+                  {
+                    name: "注目",
+                    type: "alert",
+                    icon: RiAlertFill,
+                    isSelected: (block: any) => block.type === "alert",
+                  } satisfies BlockTypeSelectItem,
+                  {
+                    name: "引用",
+                    type: "blockquote",
+                    icon: RiDoubleQuotesL,
+                    isSelected: (block: any) => block.type === "blockquote",
+                  } satisfies BlockTypeSelectItem,
+                ]}
+              />
+            )}
+          />
           <SuggestionMenuController
             triggerCharacter={"/"}
             // Replaces the default Slash Menu items with our custom ones.

@@ -1,39 +1,28 @@
+// BotTop.tsx
+
 import { VscFoldDown } from "react-icons/vsc";
 import { Tooltip } from "@material-tailwind/react";
-import { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { BotInput } from "./BotInput";
 import { motion, AnimatePresence } from "framer-motion";
 import { BotMain } from "./BotMain";
 import { BotIcon } from "./BotIcon";
-import { dateNavigation, timeNavigation } from "../note/utils/dateNavigation";
 import { PencilIcon } from "lucide-react";
+import { ModelStyle } from "./types/types";
 
-export interface modelStyle {
-  path: string;
-  options: any[];
-  checkboxes: object;
-  message: string[];
-  component: any | null;
-  timestamp: string;
+interface BotTopProps {
+  editedOpen: boolean;
+  setEditedOpen: (open: boolean) => void;
 }
 
-const initialState = [
-  {
-    path: "bot",
-    options: [],
-    checkboxes: { items: [], min: 0 },
-    message: [
-      "こんにちは！私は、ユニバーです。Shibataが開発した最新のAIアシスタントです。どんな質問やお手伝いが必要か教えてくださいね。芦屋市に関することから日常のちょっとした疑問まで、幅広くサポートしますので、どうぞお気軽にご相談ください！",
-    ],
-    component: null,
-    timestamp: { date: dateNavigation(), time: timeNavigation() },
-  },
-];
-
-export const BotTop = ({ editedOpen, setEditedOpen }: any) => {
-  const [modalOpen, setModalOpen]: any = useState(false);
-  const [searchItem, setSearchItem]: any = useState([]);
-  const [modelItem, setModelItem]: any = useState(initialState);
+export const BotTop: React.FC<BotTopProps> = ({
+  editedOpen,
+  setEditedOpen,
+}) => {
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [searchItem, setSearchItem] = useState<string>("");
+  const [modelItem, setModelItem] = useState<ModelStyle[]>([]);
+  const [enterButton, setEnterButton] = useState<boolean>(false);
 
   const containerVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -49,11 +38,12 @@ export const BotTop = ({ editedOpen, setEditedOpen }: any) => {
     },
   };
 
-  const handleClose = () => {
-    setSearchItem([]);
-    setModelItem(initialState);
+  const handleClose = useCallback(() => {
+    setSearchItem("");
+    setModelItem([]);
     setModalOpen(false);
-  };
+    setEnterButton(false);
+  }, []);
 
   return (
     <div className="fixed bottom-4 right-4">
@@ -90,11 +80,12 @@ export const BotTop = ({ editedOpen, setEditedOpen }: any) => {
                 <div
                   className="ml-8 mt-2 font-bold text-lg text-gray-600 cursor-pointer hover:text-gray-800"
                   onClick={() => setEditedOpen(!editedOpen)}
+                  aria-label="編集ボタン"
                 >
                   <PencilIcon />
                 </div>
               </div>
-              <div onClick={handleClose}>
+              <div onClick={handleClose} aria-label="閉じるボタン">
                 <VscFoldDown
                   size={20}
                   className="mt-4 text-gray-400 cursor-pointer hover:text-gray-800"
@@ -102,7 +93,7 @@ export const BotTop = ({ editedOpen, setEditedOpen }: any) => {
               </div>
             </div>
             <div className="border-b-2 border-gray-100 w-10/12 ml-8" />
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto hover-scrollbar">
               <BotMain modelItem={modelItem} />
             </div>
             <div className="p-4">
@@ -111,6 +102,7 @@ export const BotTop = ({ editedOpen, setEditedOpen }: any) => {
                 setSearchItem={setSearchItem}
                 modelItem={modelItem}
                 setModelItem={setModelItem}
+                setEnterButton={setEnterButton}
               />
             </div>
           </motion.div>

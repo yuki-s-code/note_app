@@ -1,4 +1,5 @@
-import { NOTEBLOCKS } from "@/libs/types/note";
+//getData.ts
+
 import axios from "axios";
 
 // メンション情報を表すインターフェース
@@ -13,12 +14,12 @@ interface Mention {
 // メンションされているユーザーを抽出する関数 (オブジェクトにも対応)
 export function extractMentionedUsers(data: any): Mention[] {
   const uniqueUsers = new Set<string>();
-
   function extractRecursively(content: any) {
     if (Array.isArray(content)) {
       content.forEach(extractRecursively);
     } else if (content && typeof content === 'object') {
       if (content.type === 'mention') {
+        console.log(content.props)
         uniqueUsers.add(JSON.stringify(content.props.user));
       } else if (content.type === 'tableContent') {
         content.rows.forEach((row: any) => row.cells.forEach(extractRecursively));
@@ -38,7 +39,7 @@ export function extractMentionedUsers(data: any): Mention[] {
 const isEmpty = (obj: any) => Object.keys(obj).length === 0;
 
 // APIのベースURL (設定ファイルに移動するとより良い)
-const apiUrl = "http://localhost:8088"; 
+const apiUrl = "http://localhost:8088/notes"; 
 
 // データを取得する関数 (汎用化)
 async function fetchData(index: string, dataType: string) {
@@ -58,22 +59,17 @@ async function fetchData(index: string, dataType: string) {
 
 // データを取得してlocalStorageに保存する関数 (統合)
 export async function getData(item: any) {
-  console.log(item)
   localStorage.removeItem("editorContent");
   localStorage.removeItem("editorPageLinks")
   localStorage.removeItem("dataSheetContent");
-  localStorage.removeItem("excalidrawContent");
   const data = await fetchData(item.index || item.data.index, item.type || item.data.type);
 
   // データの存在チェックとデフォルト値の設定
   const docs = data.docs || [];  
   const firstDoc = docs[0];
-  console.log(firstDoc)
 
   if (item.type === "sheet" || item.data?.type === "sheet") {
     localStorage.setItem("dataSheetContent", JSON.stringify(firstDoc.contents));
-  } else if (item.type === "excalidraw" || item.data?.type === "excalidraw") {
-    localStorage.setItem("excalidrawContent", JSON.stringify(firstDoc.contents));
   } else {
       if (isEmpty(firstDoc.contents)) {
         localStorage.setItem("editorContent", JSON.stringify(""));

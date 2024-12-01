@@ -1,6 +1,5 @@
-// const { app } = require('electron');
+
 const NeDB = require('nedb');
-// import NeDB from 'nedb';
 const path = require('path');
 
 export const boardDB = new NeDB({

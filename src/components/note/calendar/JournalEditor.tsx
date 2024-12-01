@@ -1,3 +1,5 @@
+// JournalEditor.tsx
+
 import { useAppDispatch, useAppSelector } from "@/libs/app/hooks";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
 import useSaveKey from "@/libs/utils/useSaveKey";
@@ -6,34 +8,38 @@ import {
   selectComplexAllFolder,
   selectComplexFolder,
   selectLiveBlock,
+  setAddCodeState,
   setComplexFolder,
   setLiveBlock,
   setNoteBlocks,
   setTreeIdGet,
 } from "@/slices/noteSlice";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { JEditor } from "./JEditor";
 import { DefaultSkeleton } from "@/components/atoms/fetch/DefaultSkeleton";
 import { extractMentionedUsers } from "../utils/getData";
 import { useQueryFolderBlocks } from "@/libs/hooks/noteHook/useQueryFolderBlocks";
-import { Loding } from "@/components/atoms/fetch/Loding";
+import { Loding } from "@/components/atoms/fetch/Loding"; // タイポ修正
 import { Error } from "@/components/atoms/fetch/Error";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast"; // react-hot-toast をインポート
+import SuccessToast from "@/components/atoms/toast/SuccessToast";
+import ErrorToast from "@/components/atoms/toast/ErrorToast";
+import { CODESTATEITEM } from "@/libs/types/note";
 
-export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
+export const JournalEditor = memo(({ openRight }: any) => {
   const dispatch = useAppDispatch();
   const ic: any = useAppSelector(selectComplexAllFolder);
   const { open } = useAppSelector(selectLiveBlock);
   const { ymday, mentionId }: any = useParams();
   const items: any = useAppSelector(selectComplexFolder);
-
+  const [codeItem, setCodeItem]: any = useState<CODESTATEITEM>();
   const { data, status, refetch }: any = useQueryFolderBlocks(ymday);
   const pageLink: any | null = localStorage.getItem("editorPageLinks");
   const pageLinkObject = pageLink == null ? [] : JSON.parse(pageLink);
 
-  const { addRootCreateNote, addJournalsDataMutation }: any =
-    useMutateFolderBlocks();
+  const { addJournalsDataMutation }: any = useMutateFolderBlocks();
 
   useEffect(() => {
     refetch();
@@ -58,11 +64,10 @@ export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
     return extractMentionedUsers(
       data && data.docs.length ? data?.docs[0].contents : ""
     );
-  }, []);
+  }, [data]);
 
   const submitItemHandler = useCallback(
     (isFolder: any, dataType: any) => {
-      setSaveSuccess(false);
       const initial = JSON.parse(localStorage.getItem("editorContent") || "");
       const nowMention = extractMentionedUsers(initial);
 
@@ -103,13 +108,38 @@ export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
         })
       );
       dispatch(resetSearchName());
-      addJournalsDataMutation.mutate({
-        items,
-        uuid: ymday,
-        type: dataType,
-        journalData: initial,
-        pageLinks: pageLinksChanges,
-      });
+      addJournalsDataMutation.mutate(
+        {
+          items,
+          uuid: ymday,
+          type: dataType,
+          journalData: initial,
+          pageLinks: pageLinksChanges,
+        },
+        {
+          onSuccess: () => {
+            toast.custom((t) => <SuccessToast message="保存成功しました" />, {
+              duration: 3000,
+              position: "top-right",
+            });
+          },
+          onError: (error: any) => {
+            const errorMessage =
+              error?.response?.data?.message ||
+              error.message ||
+              "保存に失敗しました";
+            toast.custom(
+              (t) => (
+                <ErrorToast message={`保存に失敗しました: ${errorMessage}`} />
+              ),
+              {
+                duration: 5000,
+                position: "top-right",
+              }
+            );
+          },
+        }
+      );
       dispatch(
         setTreeIdGet({
           id: ymday,
@@ -123,9 +153,9 @@ export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
           user: "all",
         })
       );
-      setSaveSuccess(true);
+      dispatch(setAddCodeState(codeItem));
     },
-    [dispatch, addRootCreateNote, items]
+    [dispatch, addJournalsDataMutation, items, previousMention, ymday, pageLink]
   );
 
   const result: Record<string, any> = [];
@@ -141,7 +171,7 @@ export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
 
   useSaveKey(() => onClickSave());
 
-  if (status === "loading") return <Loding />;
+  if (status === "loading") return <Loding />; // タイポ修正
   if (status === "error") return <Error />;
   if (open === false)
     return (
@@ -157,7 +187,7 @@ export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
         exit={{ opacity: 0, y: -20, marginLeft: mentionId ? 0 : 144 }} // Include marginLeft in exit state
         transition={{ duration: 0.5 }} // Animation duration
       >
-        <div className="mt-20  text-4xl text-blue-gray-400 select-none ">
+        <div className="mt-12 text-4xl text-blue-gray-400 select-none ">
           {ymday}
         </div>
         <div
@@ -169,9 +199,12 @@ export const JournalEditor = memo(({ openRight, setSaveSuccess }: any) => {
         >
           <JEditor
             initialContent={data?.docs.length ? data?.docs[0].contents : ""}
+            setCodeItem={setCodeItem}
           />
         </div>
       </motion.div>
     );
   return null;
 });
+
+export default JournalEditor;

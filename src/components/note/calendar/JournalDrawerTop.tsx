@@ -1,3 +1,5 @@
+//JournalDrawerTop.tsx
+
 import { memo, useEffect } from "react";
 import { JournalDrawerEditor } from "./JournalDrawerEditor";
 import { DefaultSkeleton } from "@/components/atoms/fetch/DefaultSkeleton";
@@ -62,16 +64,16 @@ export const JournalDrawerTop = memo(() => {
     );
 
   return (
-    <div className=" bg-white overflow-y-auto">
+    <div className=" bg-white overflow-y-auto hover-scrollbar">
       {
         <Rnd
           default={{
-            x: 750,
+            x: 840,
             y: 10,
             width: 300,
             height: 600,
           }}
-          className=" shadow-xl bg-white overflow-y-auto"
+          className=" shadow-xl bg-white overflow-y-auto hover-scrollbar"
           minWidth={350}
           minHeight={190}
           bounds="window"

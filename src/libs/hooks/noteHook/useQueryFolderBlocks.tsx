@@ -1,8 +1,10 @@
+//useQueryFolderBlocks.tsx
+
 import { useQuery } from "react-query";
 import axios from "axios";
 import { COMPLEXTREEFOLDER, NOTEBLOCKS } from "../../types/note";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/notes";
 
 // eslint-disable-next-line import/prefer-default-export
 export const useQueryTreeFolder = () => {

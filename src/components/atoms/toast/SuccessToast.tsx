@@ -1,49 +1,23 @@
-import React from "react";
-import { useToaster } from "react-hot-toast/headless";
+// src/components/atoms/toast/SuccessToast.tsx
 
-export const SuccessToast = () => {
-  const { toasts, handlers }: any = useToaster();
-  const { startPause, endPause, calculateOffset, updateHeight }: any = handlers;
+import React from "react";
+import { CheckCircle2Icon } from "lucide-react";
+
+interface SuccessToastProps {
+  message: string;
+}
+
+const SuccessToast: React.FC<SuccessToastProps> = ({ message }) => {
   return (
     <div
-      className=" fixed bottom-12 left-1/3 text-sm text-blue-gray-300 z-50"
-      onMouseEnter={startPause}
-      onMouseLeave={endPause}
+      className="max-w-sm w-full bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3"
+      role="alert"
+      aria-live="assertive"
     >
-      {toasts.map((toast: any) => {
-        const offset = calculateOffset(toast, {
-          reverseOrder: false,
-          gutter: 8,
-        });
-
-        const ref = (el: any) => {
-          if (el && typeof toast.height !== "number") {
-            const height = el.getBoundingClientRect().height;
-            updateHeight(toast.id, height);
-          }
-        };
-        return (
-          <div
-            key={toast.id}
-            ref={ref}
-            style={{
-              position: "absolute",
-              width: "450px",
-              textAlign: "center",
-              padding: "4px 4px 4px 4px",
-              borderRadius: "4px",
-              background: "#696969",
-              color: "white",
-              transition: "all 0.5s ease-out",
-              opacity: toast.visible ? 0.5 : 0,
-              transform: `translateY(${offset}px)`,
-            }}
-            {...toast.ariaProps}
-          >
-            {toast.message}
-          </div>
-        );
-      })}
+      <CheckCircle2Icon className="h-6 w-6 text-green-500 flex-shrink-0" />
+      <span className="font-medium">{message}</span>
     </div>
   );
 };
+
+export default SuccessToast;

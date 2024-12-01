@@ -6,8 +6,7 @@ import {
 import { useAppDispatch, useAppSelector } from "../../libs/app/hooks";
 import { setCreateCommentModal } from "../../slices/boardSlice";
 import progress from "../../libs/utils/progress";
-import { useMutateUserFollow } from "../../libs/hooks/loginHook/useMutateUserFollow";
-// import { extractTextFromJSON } from "./utils/extractTextFromJson";
+import { useMutateBoard } from "@/libs/hooks/boardHook/useMutateBoard";
 
 type ItemProps = { item: any };
 
@@ -17,7 +16,7 @@ const BoardItem = ({ item }: ItemProps) => {
   const prog = progress(item.createdAt);
 
   const { boardFollowMutation, boardDeleteFollowMutation }: any =
-    useMutateUserFollow();
+    useMutateBoard();
 
   const commentModalHandler = (e: boolean) => {
     dispatch(
@@ -77,18 +76,6 @@ const BoardItem = ({ item }: ItemProps) => {
       });
     }
   };
-
-  // const hashTagExtractor = (json: any) => {
-  //   const hashtags: any = [];
-  //   json.contents.root.children.forEach((paragraph: any) => {
-  //     paragraph.children.forEach((item: any) => {
-  //       if (item.type === "hashtag") {
-  //         hashtags.push(item.text);
-  //       }
-  //     });
-  //   });
-  //   return hashtags;
-  // };
 
   return (
     <div className="flex flex-col flex-grow overflow-auto">

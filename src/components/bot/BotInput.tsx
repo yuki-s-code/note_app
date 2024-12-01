@@ -1,36 +1,110 @@
+// BotInput.tsx
+
 import { Textarea, IconButton } from "@material-tailwind/react";
 import { dateNavigation, timeNavigation } from "../note/utils/dateNavigation";
+import React, { useCallback } from "react";
+import { ModelStyle } from "./types/types";
+import { useMutateBotMessage } from "@/libs/hooks/noteHook/useQueryBot";
 
-export const BotInput = ({
+interface BotInputProps {
+  searchItem: string;
+  setSearchItem: (value: string) => void;
+  modelItem: ModelStyle[];
+  setModelItem: (items: ModelStyle[]) => void;
+  setEnterButton: (value: boolean) => void;
+}
+
+export const BotInput: React.FC<BotInputProps> = ({
   searchItem,
   setSearchItem,
   modelItem,
   setModelItem,
-}: any) => {
-  const itemPush = () => {
-    setSearchItem([]);
-    setModelItem([
-      ...modelItem,
-      {
-        path: "user",
-        options: [],
-        checkboxes: { items: [], min: 0 },
-        message: [searchItem],
-        component: null,
-        timestamp: { date: dateNavigation(), time: timeNavigation() },
+  setEnterButton,
+}) => {
+  const mutateBotMessage = useMutateBotMessage();
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setSearchItem(e.target.value);
+    },
+    [setSearchItem]
+  );
+
+  const handleSend = useCallback(() => {
+    if (!searchItem.trim()) return; // 空入力の防止
+
+    // ユーザーメッセージの追加
+    const newUserMessage: ModelStyle = {
+      id: Date.now().toString(),
+      path: "user",
+      category: [],
+      intentId: "",
+      questions: [searchItem],
+      answer: "",
+      keywords: [],
+      relatedFAQs: [],
+      timestamp: { date: dateNavigation(), time: timeNavigation() },
+    };
+
+    // modelItem にユーザーメッセージを追加
+    setModelItem([...modelItem, newUserMessage]);
+    setEnterButton(true);
+    setSearchItem(""); // 入力フィールドをクリア
+
+    // APIからBotの回答を取得
+    mutateBotMessage.mutate(searchItem, {
+      onSuccess: (data) => {
+        const botAnswer = data.answer || "回答が見つかりませんでした。";
+
+        const newBotMessage: ModelStyle = {
+          id: (Date.now() + 1).toString(),
+          path: "bot",
+          category: [],
+          intentId: data.intent || "",
+          questions: [],
+          answer: botAnswer,
+          keywords: [],
+          relatedFAQs: [],
+          timestamp: { date: dateNavigation(), time: timeNavigation() },
+        };
+
+        // modelItem にBotの回答を追加
+        //@ts-ignore
+        setModelItem((prevItems) => [...prevItems, newBotMessage]);
       },
-    ]);
-  };
+      onError: (error: any) => {
+        console.error("Botの回答取得に失敗しました:", error);
+      },
+    });
+  }, [
+    searchItem,
+    modelItem,
+    setModelItem,
+    mutateBotMessage,
+    setEnterButton,
+    setSearchItem,
+  ]);
+
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend]
+  );
+
   return (
     <div className="flex w-[420px] flex-row items-center gap-2 rounded-[99px] border border-gray-900/10 bg-gray-10/5 p-2">
       <Textarea
+        onPointerEnterCapture
+        onPointerLeaveCapture
         rows={1}
         resize={true}
         value={searchItem}
-        onChange={(e: any) => setSearchItem(e.target.value)}
+        onChange={handleInputChange}
         placeholder="ここに入力してください"
-        onPointerEnterCapture
-        onPointerLeaveCapture
         className="min-h-full !border-0 focus:border-transparent"
         containerProps={{
           className: "grid h-full",
@@ -38,15 +112,19 @@ export const BotInput = ({
         labelProps={{
           className: "before:content-none after:content-none",
         }}
+        onKeyPress={handleKeyPress}
+        aria-label="入力フィールド"
       />
       <IconButton
-        variant="text"
-        className="rounded-full"
         placeholder="true"
         onPointerEnterCapture
         onPointerLeaveCapture
-        onClick={() => itemPush()}
+        variant="text"
+        className="rounded-full"
+        onClick={handleSend}
+        aria-label="送信"
       >
+        {/* 送信アイコン */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"

@@ -4,7 +4,7 @@ import { useAppDispatch } from "../../app/hooks";
 import { resetCreateUser } from "../../../slices/userSlice";
 import { CREATEUSER } from "../../types/login";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/auth";
 
 // eslint-disable-next-line import/prefer-default-export
 export const useMutateUser = () => {

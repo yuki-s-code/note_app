@@ -1,4 +1,6 @@
-import React, { memo, useEffect, useState } from "react";
+// JournalApp.tsx
+
+import React, { memo, useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import CalendarApp from "./CalendarApp";
@@ -6,143 +8,151 @@ import { DayScroller } from "./DayScroller";
 import { JournalEditor } from "./JournalEditor";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { CalendarDaysIcon } from "lucide-react";
-import { SuccessToast } from "@/components/atoms/toast/SuccessToast";
-import toast from "react-hot-toast/headless";
+
+const MIN_CALENDAR_WIDTH = 200;
 
 export const JournalApp = memo(() => {
   const { mentionId }: any = useParams();
   const navigate = useNavigate();
   const [selected, setSelected]: any = useState<Date | null>(new Date());
   const [openRight, setOpenRight] = useState(false);
-  const [calendarWidth, setCalendarWidth] = useState(300); // Initial width
+  const [calendarWidth, setCalendarWidth] = useState(300); // 初期幅
   const [isResizing, setIsResizing] = useState(false);
   const [startX, setStartX] = useState(0); // ドラッグ開始時のX座標
-  const [saveSuccess, setSaveSuccess]: any = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  if (saveSuccess) {
-    toast("Save was success");
-  }
-
-  const handleMouseDown = (e: any) => {
-    setSaveSuccess(false);
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     setIsResizing(true);
     setStartX(e.clientX);
-  };
+  }, []);
 
-  const handleMouseUp = () => {
-    setSaveSuccess(false);
+  const handleMouseUp = useCallback(() => {
     setIsResizing(false);
-  };
+  }, []);
 
-  const handleMouseMove = (e: any) => {
-    if (isResizing) {
-      setSaveSuccess(false);
-      const deltaX = startX - e.clientX;
-      const newWidth = calendarWidth + deltaX;
-
-      setCalendarWidth(Math.max(newWidth, 200)); // 最小幅は200px
-      setStartX(e.clientX); // 開始位置を更新
-    }
-  };
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (isResizing) {
+        const deltaX = startX - e.clientX;
+        const newWidth = calendarWidth + deltaX;
+        setCalendarWidth(Math.max(newWidth, MIN_CALENDAR_WIDTH));
+        setStartX(e.clientX);
+      }
+    },
+    [isResizing, startX, calendarWidth]
+  );
 
   useEffect(() => {
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing]);
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   const today = new Date();
   const [month, setMonth] = useState<Date>(
     new Date(today.getFullYear(), today.getMonth(), 1)
-  ); // todayの月を初期値にする
-  const handleTodayClick = () => {
-    setSaveSuccess(false);
-    const today = new Date();
-    setSelected(today);
-    setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    navigate(`/root/note/journals/${format(today, "yyyy-MM-dd")}`);
-  };
+  );
+
+  const handleTodayClick = useCallback(() => {
+    const todayDate = new Date();
+    setSelected(todayDate);
+    setMonth(new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
+    navigate(`/root/note/journals/${format(todayDate, "yyyy-MM-dd")}`);
+  }, [navigate]);
+
+  const toggleSidebar = useCallback(() => {
+    setOpenRight((prev) => !prev);
+  }, []);
 
   return (
     <>
-      <div>
-        <div>
-          <div className="sticky top-0 z-10 bg-white h-12 gap-2 flex justify-between">
-            <div className=" h-12">
-              {selected && (
-                <DayScroller
-                  selectedDate={selected}
-                  setSelected={setSelected}
-                  setMonth={setMonth}
-                  handleTodayClick={handleTodayClick}
-                />
-              )}
-              <div className=" relative z-0">
-                <JournalEditor
-                  openRight={openRight}
-                  setSaveSuccess={setSaveSuccess}
-                />
-              </div>
+      <div className="flex h-screen">
+        {/* メインコンテンツエリア */}
+        <div className="flex flex-col flex-1">
+          {/* ヘッダー */}
+
+          <header className="w-full fixed top-0 z-20 bg-white h-20 flex items-center px-4">
+            {/* 左側: DayScroller */}
+            <div className="flex items-center space-x-4">
+              <DayScroller
+                selectedDate={selected}
+                setSelected={setSelected}
+                setMonth={setMonth}
+                handleTodayClick={handleTodayClick}
+              />
+              {/* Breadcrumbs can be added here if needed */}
             </div>
-            <div>
-              <div className="flex relative z-0">
-                {openRight ? (
-                  <div
-                    className="sticky top-12 flex-none"
-                    style={{ width: calendarWidth }}
-                  >
-                    <div className=" flex">
-                      <div
-                        className="h-[700px] duration-200 hover:bg-gray-400 hover:duration-200 ease-in-out w-1 hover:w-1 bg-gray-100 cursor-ew-resize z-10"
-                        //@ts-ignore
-                        onMouseDown={handleMouseDown}
-                        onDoubleClick={() => setOpenRight(false)}
-                      />
-                      <div
-                        className=" z-40"
-                        style={{ width: calendarWidth - 4 }}
-                      >
-                        <CalendarApp
-                          selected={selected}
-                          onSelect={setSelected}
-                          month={month}
-                          onMonthChange={setMonth}
-                          today={today}
-                          handleTodayClick={handleTodayClick}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className=" cursor-pointer mr-4 mt-2 text-blue-gray-200 hover:text-blue-gray-400"
-                    onClick={() => setOpenRight(true)}
-                  >
-                    <CalendarDaysIcon />
-                  </div>
-                )}
-              </div>
+
+            {/* 右側: サイドバーのトグルボタン */}
+            <div className="flex items-center h-screen">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 text-blue-500 hover:text-blue-700"
+                aria-label="Toggle Calendar Sidebar"
+              >
+                <CalendarDaysIcon size={24} />
+              </button>
             </div>
+          </header>
+
+          {/* スクロール可能なメインエリア */}
+          <div className="mt-12 flex-1 overflow-y-auto p-4 hover-scrollbar">
+            <JournalEditor openRight={openRight} />
           </div>
         </div>
-      </div>
-      <div className="relative overflow-x-auto z-50">
-        {mentionId && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }} // 初期状態: 非表示、少し縮小
-            animate={{ opacity: 1, scale: 1 }} // アニメーション後: 表示、元のサイズ
-            exit={{ opacity: 0, scale: 0.9 }} // コンポーネントが消える際のアニメーション
-            transition={{ duration: 0.5 }} // アニメーション時間
-            className="fixed top-12"
+
+        {/* サイドバー - CalendarApp */}
+        {openRight && (
+          <aside
+            ref={sidebarRef}
+            className="flex-none transition-width duration-200 z-20 bg-white"
+            style={{ width: calendarWidth }}
           >
-            <Outlet />
-          </motion.div>
+            <div className="flex h-full">
+              {/* リサイズハンドル */}
+              <div
+                className=" w-[2px] bg-gray-300 cursor-ew-resize hover:bg-gray-500 h-full"
+                onMouseDown={handleMouseDown}
+                onDoubleClick={() => setOpenRight(false)}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize Calendar Sidebar"
+              />
+              {/* CalendarApp */}
+              <div className="flex-1 overflow-y-auto hover-scrollbar">
+                <CalendarApp
+                  selected={selected}
+                  onSelect={setSelected}
+                  month={month}
+                  onMonthChange={setMonth}
+                  today={today}
+                  handleTodayClick={handleTodayClick}
+                />
+              </div>
+            </div>
+          </aside>
         )}
       </div>
-      <SuccessToast />
+
+      {/* モーダルやアウトレット */}
+      {mentionId && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.5 }}
+          className="fixed top-20 left-0 w-full z-30"
+        >
+          <Outlet />
+        </motion.div>
+      )}
     </>
   );
 });
+
+export default JournalApp;

@@ -1,4 +1,13 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+//Editor.tsx
+
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   BlockNoteEditor,
   BlockNoteSchema,
@@ -6,20 +15,30 @@ import {
   uploadToTmpFilesDotOrg_DEV_ONLY,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
+  locales,
 } from "@blocknote/core";
+import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import {
+  BlockTypeSelectItem,
   DefaultReactSuggestionItem,
+  FormattingToolbar,
+  FormattingToolbarController,
   SuggestionMenuController,
+  blockTypeSelectItems,
   getDefaultReactSlashMenuItems,
   useCreateBlockNote,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useParams } from "react-router-dom";
+import { RiAlertFill, RiDoubleQuotesL } from "react-icons/ri";
+
 import { useAppDispatch, useAppSelector } from "@/libs/app/hooks";
 import {
+  resetCodeState,
   selectComplexAllFolder,
   selectTitleId,
+  setAddCodeState,
   setComplexAllFolder,
   setItemIndex,
   setTitleId,
@@ -36,50 +55,72 @@ import {
   Popover,
   PopoverContent,
   PopoverHandler,
+  Tooltip,
   Typography,
 } from "@material-tailwind/react";
 import { VscFileSymlinkFile } from "react-icons/vsc";
 import { Link } from "react-router-dom";
 import { getData } from "./utils/getData";
-import { PaletteIcon } from "lucide-react";
+import { GitCompareIcon, PaletteIcon } from "lucide-react";
 import { FcDataSheet } from "react-icons/fc";
 import { CodeBlock, insertCode } from "@defensestation/blocknote-code";
 import {
   insertAlert,
+  insertBlockQuote,
   insertPDF,
   insertTimeItem,
   insertTodayItem,
+  insertTomorrowItem,
+  insertYesterDayItem,
 } from "./insert/InsertCustumItem";
 import { notJournalItem } from "./utils/notJournalItem";
 import { convertToIndexTitles } from "./utils/convertToIndexTItle";
 import { PDF } from "./PDF";
 import { motion } from "framer-motion";
+import {
+  ArrowConversionExtension,
+  DableLeftConversionExtension,
+  DableRightConversionExtension,
+} from "./utils/ArrowConversionExtension";
+import { BlockQuote } from "./BlockQuote";
+import CharacterCount from "@tiptap/extension-character-count";
+import { Draw, insertDraw } from "blocknote-draw";
+import { DiffNoteViewr } from "./DiffNoteViewr";
+import { formatHTML } from "./utils/formatHTML";
 
-function Icon({ id, open }: any) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-      className={`${
-        id === open ? "rotate-180" : ""
-      } h-5 w-5 transition-transform`}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-      />
-    </svg>
-  );
-}
+// アイコンコンポーネントの再利用可能化
+const Icon = memo(({ id, open }: { id: number; open: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={2}
+    stroke="currentColor"
+    className={`${
+      id === open ? "rotate-180" : ""
+    } h-5 w-5 transition-transform duration-300`}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+    />
+  </svg>
+));
 
-function Editor({ initialContent, result }: any) {
+// アイコンのアニメーションバリアント
+const iconVariants = {
+  initial: { scale: 1 },
+  hover: { scale: 1.2 },
+  tap: { scale: 0.9 },
+};
+
+const limit = 10000;
+
+function Editor({ initialContent, result, setCodeItem }: any) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(1);
-
+  const [openDiff, setOpenDiff] = useState(false);
   const handleOpen = (value: any) => setOpen(open === value ? 0 : value);
 
   const { noteId, mentionId }: any = useParams();
@@ -101,22 +142,25 @@ function Editor({ initialContent, result }: any) {
     return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
   }, [inputDateTime]);
 
-  const onClickTitled = useCallback((m: any) => {
-    dispatch(
-      setTitleId({
-        index: m.index,
-        dataItem: m.title,
-        dataIcon: m.icon,
-        dataImage: m.image,
-        dataType: m.type,
-      })
-    );
-    dispatch(
-      setItemIndex({
-        index: m.index,
-      })
-    );
-  }, []);
+  const onClickTitled = useCallback(
+    (m: any) => {
+      dispatch(
+        setTitleId({
+          index: m.index,
+          dataItem: m.title,
+          dataIcon: m.icon,
+          dataImage: m.image,
+          dataType: m.type,
+        })
+      );
+      dispatch(
+        setItemIndex({
+          index: m.index,
+        })
+      );
+    },
+    [dispatch]
+  );
 
   const mentionLists = useMemo(
     () => convertToIndexTitles(notJournalItem(i)),
@@ -187,13 +231,21 @@ function Editor({ initialContent, result }: any) {
       //@ts-ignore
       insertTodayItem(editor),
       //@ts-ignore
+      insertTomorrowItem(editor),
+      //@ts-ignore
+      insertYesterDayItem(editor),
+      //@ts-ignore
       insertTimeItem(editor),
       //@ts-ignore
       insertAlert(editor),
       //@ts-ignore
-      insertCode(),
+      insertBlockQuote(editor),
       //@ts-ignore
       insertPDF(editor),
+      //@ts-ignore
+      insertDraw(editor),
+      //@ts-ignore
+      insertCode(editor),
     ],
     []
   );
@@ -217,45 +269,158 @@ function Editor({ initialContent, result }: any) {
     [mentionLists]
   );
 
-  const schema = BlockNoteSchema.create({
-    blockSpecs: {
-      // Adds all default blocks.
-      ...defaultBlockSpecs,
-      // Adds the Alert block.
-      alert: Alert,
-      //@ts-ignore
-      procode: CodeBlock,
-      //@ts-ignore
-      pdf: PDF,
-    },
-    inlineContentSpecs: {
-      // Adds all default inline content.
-      ...defaultInlineContentSpecs,
-      // Adds the mention tag.
-      mention: Mention,
-    },
-  });
+  const schema = useMemo(
+    () =>
+      BlockNoteSchema.create({
+        blockSpecs: {
+          ...defaultBlockSpecs,
+          alert: Alert,
+          blockquote: BlockQuote,
+          pdf: PDF,
+          draw: Draw,
+          //@ts-ignore
+          procode: CodeBlock,
+        },
+        inlineContentSpecs: {
+          ...defaultInlineContentSpecs,
+          mention: Mention,
+        },
+      }),
+    []
+  );
+
+  const initialContentParsed = useMemo(() => {
+    try {
+      return initialContent ? JSON.parse(initialContent) : undefined; // 空の場合は空のオブジェクト
+    } catch (error) {
+      console.error("Error parsing initial content:", error);
+      return undefined; // エラーが発生した場合は空のオブジェクトを返す
+    }
+  }, [initialContent]);
 
   const editor = useCreateBlockNote(
     {
       schema,
-      initialContent: JSON.parse(initialContent),
+      initialContent: initialContentParsed,
       uploadFile: uploadToTmpFilesDotOrg_DEV_ONLY,
+      _tiptapOptions: {
+        extensions: [
+          ArrowConversionExtension,
+          DableRightConversionExtension,
+          DableLeftConversionExtension,
+          CharacterCount.configure({
+            limit,
+          }),
+        ],
+      },
+      dictionary: locales.ja,
     },
     []
   );
 
+  const characterCount =
+    editor?._tiptapEditor?.storage.characterCount.characters() || 0;
+
+  const percentage = editor ? Math.round((100 / limit) * characterCount) : 0;
+
+  const isWarning = characterCount >= limit;
+  // 追加: キャラクターカウントとワードカウントの状態管理
+  const [charCount, setCharCount] = useState(
+    editor._tiptapEditor.storage.characterCount.characters()
+  );
+
+  const onChange = async () => {
+    if (editor) {
+      localStorage.setItem("editorContent", JSON.stringify(editor.document));
+      const html: any = await editor.blocksToHTMLLossy(editor.document);
+      setCodeItem({
+        id: dataToString(),
+        code: formatHTML(html),
+        language: "html",
+      });
+      if (editor._tiptapEditor) {
+        setCharCount(editor._tiptapEditor.storage.characterCount.characters());
+      }
+    }
+  };
+
+  useEffect(() => {
+    dispatch(resetCodeState());
+    const fetchData = async () => {
+      if (editor) {
+        const html = await editor.blocksToHTMLLossy(editor.document);
+        dispatch(
+          setAddCodeState({
+            id: "initial",
+            code: formatHTML(html),
+            language: "html",
+          })
+        );
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <>
-      <div className="appearance-none mt-4 block rounded-lg p-4 text-xl focus:outline-none">
+      <div className="hover-scrollbar overflow-y-auto overflow-x-hidden appearance-none mt-4 block rounded-lg p-4 text-xl focus:outline-none">
         <div>
           <div>
-            <div className=" absolute -mt-20">
-              <EmojiPicker icon={i[noteId].data.icon} onChange={onIconChange} />
+            <div className=" absolute -ml-3 top-20">
+              <EmojiPicker
+                icon={i[noteId].data.icon}
+                onChange={onIconChange}
+                sideItem={mentionId}
+              />
             </div>
             <div className=" w-full -mt-2 flex gap-1 text-xs font-bold ml-36 text-gray-500">
               <div className="w-12">更新日</div>
               <div className=" w-36">{dataToString()}</div>
+              <div
+                className={`flex items-center text-xs gap-2 ml-2 ${
+                  charCount === limit ? "character-count--warning" : ""
+                }`}
+              >
+                <svg
+                  className=" -mt-1"
+                  height="20"
+                  width="20"
+                  viewBox="0 0 20 20"
+                >
+                  <circle r="10" cx="10" cy="10" fill="#e9ecef" />
+                  <circle
+                    r="5"
+                    cx="10"
+                    cy="10"
+                    fill="transparent"
+                    stroke="currentColor"
+                    strokeWidth="10"
+                    strokeDasharray={`calc(${percentage} * 31.4 / 100) 31.4`}
+                    transform="rotate(-90) translate(-20)"
+                    className={`${
+                      isWarning ? "text-red-500" : "text-blue-500"
+                    }`}
+                  />
+                  <circle r="6" cx="10" cy="10" fill="white" />
+                </svg>
+                <div>
+                  {charCount} / {limit} 文字数
+                </div>
+                <Tooltip content={"差分表示"}>
+                  <motion.div
+                    className="ml-40 absolute cursor-pointer"
+                    variants={iconVariants}
+                    initial="initial"
+                    whileTap="tap"
+                    animate={"initial"}
+                  >
+                    <GitCompareIcon
+                      className={` ${openDiff ? " text-blue-400" : ""}`}
+                      onClick={() => setOpenDiff(!openDiff)}
+                    />
+                  </motion.div>
+                </Tooltip>
+              </div>
             </div>
             <motion.div
               className="relative w-full flex mt-4"
@@ -321,8 +486,6 @@ function Editor({ initialContent, result }: any) {
                                 >
                                   {l.type == "sheet" ? (
                                     <FcDataSheet className=" mt-1" />
-                                  ) : l.type == "excalidraw" ? (
-                                    <PaletteIcon className=" h-4 w-4 mt-1" />
                                   ) : (
                                     l.icon
                                   )}
@@ -411,41 +574,69 @@ function Editor({ initialContent, result }: any) {
           </motion.div>
         </div>
       </div>
-      <motion.div
-        className={mentionId ? `max-w-3xl mt-8` : `max-w-4xl mt-8`}
-        initial={{ opacity: 0, y: 20, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in initial state
-        animate={{ opacity: 1, y: 0, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in animate state
-        exit={{ opacity: 0, y: -20, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in exit state
-        transition={{ duration: 0.5 }} // Animation duration
-      >
-        <BlockNoteView
-          editor={editor}
-          onChange={() => {
-            localStorage.setItem(
-              "editorContent",
-              JSON.stringify(editor.document)
-            );
-          }}
-          theme={"light"}
-          slashMenu={false}
-        >
-          <SuggestionMenuController
-            triggerCharacter={"/"}
-            // Replaces the default Slash Menu items with our custom ones.
-            getItems={async (query) =>
-              //@ts-ignore
-              filterSuggestionItems(getCustomSlashMenuItems(editor), query)
+      <>
+        {openDiff ? (
+          <div className=" -ml-96">
+            <DiffNoteViewr />
+          </div>
+        ) : (
+          <motion.div
+            className={
+              mentionId ? `max-w-3xl h-full mt-4` : `max-w-3xl h-full mt-4`
             }
-          />
-          <SuggestionMenuController
-            triggerCharacter={"@"}
-            getItems={async (query) =>
-              // Gets the mentions menu items
-              filterSuggestionItems(getMentionMenuItems(editor), query)
-            }
-          />
-        </BlockNoteView>
-      </motion.div>
+            initial={{ opacity: 0, y: 20, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in initial state
+            animate={{ opacity: 1, y: 0, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in animate state
+            exit={{ opacity: 0, y: -20, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in exit state
+            transition={{ duration: 0.5 }} // Animation duration
+          >
+            <BlockNoteView
+              editor={editor}
+              onChange={onChange}
+              theme={"light"}
+              slashMenu={false}
+              formattingToolbar={false}
+            >
+              <FormattingToolbarController
+                formattingToolbar={() => (
+                  <FormattingToolbar
+                    blockTypeSelectItems={[
+                      ...blockTypeSelectItems(editor.dictionary),
+                      {
+                        name: "注目",
+                        type: "alert",
+                        icon: RiAlertFill,
+                        isSelected: (block: any) => block.type === "alert",
+                      } satisfies BlockTypeSelectItem,
+                      {
+                        name: "引用",
+                        type: "blockquote",
+                        icon: RiDoubleQuotesL,
+                        isSelected: (block: any) => block.type === "blockquote",
+                      } satisfies BlockTypeSelectItem,
+                    ]}
+                  />
+                )}
+              />
+              <SuggestionMenuController
+                triggerCharacter={"/"}
+                // Replaces the default Slash Menu items with our custom ones.
+                getItems={async (query) =>
+                  //@ts-ignore
+                  filterSuggestionItems(getCustomSlashMenuItems(editor), query)
+                }
+              />
+              <SuggestionMenuController
+                triggerCharacter={"@"}
+                getItems={async (query) =>
+                  // Gets the mentions menu items
+                  filterSuggestionItems(getMentionMenuItems(editor), query)
+                }
+              />
+            </BlockNoteView>
+          </motion.div>
+        )}
+      </>
+
       <div className=" mt-4 border border-b-2 opacity-10 hover:opacity-60 hover:border-b-4 cursor-pointer" />
     </>
   );

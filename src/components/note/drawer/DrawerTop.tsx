@@ -1,8 +1,8 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect } from "react";
 import { VscLayoutSidebarRight, VscLayoutCentered } from "react-icons/vsc";
 import { Rnd } from "react-rnd";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
 import { DrawerEditor } from "./DrawerEditor";
 import { DefaultSkeleton } from "@/components/atoms/fetch/DefaultSkeleton";
 import { useQueryFolderBlocks } from "@/libs/hooks/noteHook/useQueryFolderBlocks";
@@ -16,7 +16,6 @@ import {
   setMentionBlock,
   setPeekDisplayOpen,
 } from "@/slices/noteSlice";
-import { Tooltip } from "@material-tailwind/react";
 
 export const DrawerTop = memo(() => {
   const dispatch = useAppDispatch();
@@ -24,10 +23,11 @@ export const DrawerTop = memo(() => {
   const navigate = useNavigate();
   const { peekDisplay }: any = useAppSelector(selectPeekDisplay);
   const mentionOpen: any = useAppSelector(selectMentionBlock);
-
+  console.log(mentionOpen);
   const { data, status, refetch }: any = useQueryFolderBlocks(
     mentionOpen.mentionData
   );
+  console.log(data?.docs);
 
   useEffect(() => {
     refetch();
@@ -65,13 +65,11 @@ export const DrawerTop = memo(() => {
   }, []);
 
   const onClickPeek = useCallback((f: any) => {
-    console.log(f);
     dispatch(
       setPeekDisplayOpen({
         peekDisplay: f,
       })
     );
-    console.log(peekDisplay);
   }, []);
 
   if (status === "loading") return <Loding />;
@@ -95,22 +93,21 @@ export const DrawerTop = memo(() => {
             default={{
               x: 100,
               y: 48,
-              width: 720,
+              width: 700,
               height: 500,
             }}
-            className=" shadow-xl bg-white overflow-y-auto opacity-95"
+            className="hover-scrollbar shadow-xl bg-white overflow-y-auto opacity-95"
             minWidth={350}
             minHeight={190}
             bounds="window"
           >
             <DrawerEditor initialContent={data?.docs[0].contents} />
             <div className=" flex opacity-40">
-              <Tooltip content="サイド画面">
-                <VscLayoutSidebarRight
-                  className=" absolute left-4 top-5 cursor-pointer hover:opacity-50"
-                  onClick={() => onClickPeek(true)}
-                />
-              </Tooltip>
+              <VscLayoutSidebarRight
+                className=" absolute left-4 top-5 cursor-pointer hover:opacity-50"
+                onClick={() => onClickPeek(true)}
+              />
+
               <div
                 className=" absolute right-4 top-4 cursor-pointer hover:opacity-80"
                 onClick={() => onClickMention()}
@@ -121,7 +118,7 @@ export const DrawerTop = memo(() => {
           </Rnd>
         </motion.div>
       ) : (
-        <div className="bg-white overflow-y-auto shadow-xl resize-x min-h-[calc(100vh-5rem)]  min-w-[350px] max-w-[550px] ">
+        <div className="hover-scrollbar -ml-8 bg-white overflow-y-auto shadow-xl resize-x min-h-[calc(100vh-5rem)]  min-w-[350px] max-w-[550px] ">
           <div>
             <div
               className="w-full"
@@ -136,6 +133,7 @@ export const DrawerTop = memo(() => {
                 className=" absolute left-4 top-5 cursor-pointer opacity-10 hover:opacity-50"
                 onClick={() => onClickPeek(false)}
               />
+
               <div
                 className=" absolute right-4 top-4 cursor-pointer opacity-10 hover:opacity-50"
                 onClick={() => onClickMention()}

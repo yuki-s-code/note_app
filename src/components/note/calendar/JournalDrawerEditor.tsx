@@ -1,3 +1,5 @@
+//JournalDrawerEditor.tsx
+
 import React, { useCallback, useMemo, useRef } from "react";
 import {
   BlockNoteEditor,
@@ -6,11 +8,17 @@ import {
   uploadToTmpFilesDotOrg_DEV_ONLY,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
+  locales,
 } from "@blocknote/core";
+import "@blocknote/core/fonts/inter.css";
 import "@blocknote/react/style.css";
 import {
+  BlockTypeSelectItem,
   DefaultReactSuggestionItem,
+  FormattingToolbar,
+  FormattingToolbarController,
   SuggestionMenuController,
+  blockTypeSelectItems,
   getDefaultReactSlashMenuItems,
   useCreateBlockNote,
 } from "@blocknote/react";
@@ -23,12 +31,14 @@ import {
 } from "@/slices/noteSlice";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
 import EmojiPicker from "@/components/modals/note/EmojiPicker";
-import { CodeBlock, insertCode } from "@defensestation/blocknote-code";
 import {
   insertAlert,
+  insertBlockQuote,
   insertPDF,
   insertTimeItem,
   insertTodayItem,
+  insertTomorrowItem,
+  insertYesterDayItem,
 } from "../insert/InsertCustumItem";
 import { notJournalItem } from "../utils/notJournalItem";
 import { convertToIndexTitles } from "../utils/convertToIndexTItle";
@@ -36,6 +46,14 @@ import { extractMentionedUsers } from "../utils/getData";
 import { useParams } from "react-router-dom";
 import { JournalMention } from "./JournalMention";
 import { PDF } from "../PDF";
+import { CodeBlock, insertCode } from "@defensestation/blocknote-code";
+import {
+  ArrowConversionExtension,
+  DableLeftConversionExtension,
+  DableRightConversionExtension,
+} from "../utils/ArrowConversionExtension";
+import { BlockQuote } from "../BlockQuote";
+import { RiAlertFill, RiDoubleQuotesL } from "react-icons/ri";
 
 export const JournalDrawerEditor = ({ initialContent }: any) => {
   const dispatch = useAppDispatch();
@@ -139,11 +157,26 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
     };
 
     timer.current = setTimeout(() => {
-      folderBlocksContentsMutation.mutate({
-        id: mentionId,
-        contents: JSON.parse(initial),
-        pageLinks: pageLinksChanges,
-      });
+      folderBlocksContentsMutation.mutate(
+        {
+          id: mentionId,
+          contents: JSON.parse(initial),
+          pageLinks: pageLinksChanges,
+        },
+        {
+          onSuccess: () => {
+            console.log("Save was success");
+          },
+          onError: (error: any) => {
+            // エラーがオブジェクトの場合とメッセージが存在しない場合に対応
+            const errorMessage =
+              error?.response?.data?.message ||
+              error.message ||
+              "保存に失敗しました。";
+            alert(`保存に失敗しました: ${errorMessage}`);
+          },
+        }
+      );
     }, 500);
   }, []);
 
@@ -154,8 +187,11 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
       // Adds the Alert block.
       alert: Alert,
       //@ts-ignore
-      procode: CodeBlock,
+      blockquote: BlockQuote,
+      //@ts-ignore
       pdf: PDF,
+      //@ts-ignore
+      procode: CodeBlock,
     },
     inlineContentSpecs: {
       // Adds all default inline content.
@@ -173,13 +209,19 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
       //@ts-ignore
       insertTodayItem(editor),
       //@ts-ignore
+      insertTomorrowItem(editor),
+      //@ts-ignore
+      insertYesterDayItem(editor),
+      //@ts-ignore
       insertTimeItem(editor),
       //@ts-ignore
       insertAlert(editor),
       //@ts-ignore
-      insertCode(),
+      insertBlockQuote(editor),
       //@ts-ignore
       insertPDF(editor),
+      //@ts-ignore
+      insertCode(editor),
     ],
     []
   );
@@ -208,6 +250,14 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
       schema,
       initialContent: initialContent,
       uploadFile: uploadToTmpFilesDotOrg_DEV_ONLY,
+      _tiptapOptions: {
+        extensions: [
+          ArrowConversionExtension,
+          DableRightConversionExtension,
+          DableLeftConversionExtension,
+        ],
+      },
+      dictionary: locales.ja,
     },
     []
   );
@@ -223,7 +273,7 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
               aria-hidden={true}
             />
             <textarea
-              className="absolute text-4xl font-bold top-0 w-full h-full resize-none p-3 border-none outline-none"
+              className="absolute text-2xl font-bold top-0 w-full h-full resize-none p-3 border-none outline-none"
               value={i[mentionId].data.title}
               onChange={(e) => onTitleChange(e.target.value)}
               placeholder="無題"
@@ -237,7 +287,29 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
           onChange={() => onContentChange(editor.document)}
           theme={"light"}
           slashMenu={false}
+          formattingToolbar={false}
         >
+          <FormattingToolbarController
+            formattingToolbar={() => (
+              <FormattingToolbar
+                blockTypeSelectItems={[
+                  ...blockTypeSelectItems(editor.dictionary),
+                  {
+                    name: "注目",
+                    type: "alert",
+                    icon: RiAlertFill,
+                    isSelected: (block: any) => block.type === "alert",
+                  } satisfies BlockTypeSelectItem,
+                  {
+                    name: "引用",
+                    type: "blockquote",
+                    icon: RiDoubleQuotesL,
+                    isSelected: (block: any) => block.type === "blockquote",
+                  } satisfies BlockTypeSelectItem,
+                ]}
+              />
+            )}
+          />
           <SuggestionMenuController
             triggerCharacter={"/"}
             // Replaces the default Slash Menu items with our custom ones.

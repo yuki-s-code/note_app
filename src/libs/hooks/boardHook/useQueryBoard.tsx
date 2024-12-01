@@ -1,8 +1,10 @@
+//useQueryBoard.tsx
+
 import { useQuery } from "react-query";
 import axios from "axios";
 import { BOARD, HASH } from "../../types/board";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/boards";
 
 // eslint-disable-next-line import/prefer-default-export
 export const useQueryBoard = (id: string) => {

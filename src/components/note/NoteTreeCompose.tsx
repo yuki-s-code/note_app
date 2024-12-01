@@ -1,3 +1,5 @@
+//NoteTreeCompose.tsx
+
 import {
   Tree,
   ControlledTreeEnvironment,
@@ -7,7 +9,7 @@ import {
   DraggingPositionItem,
 } from "react-complex-tree";
 import "react-complex-tree/lib/style-modern.css";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/libs/app/hooks";
 import {
   resetNoteBlocks,
@@ -46,51 +48,51 @@ export const NoteTreeCompose = memo(() => {
   const [expandedItems, setExpandedItems]: any = useState([]);
   const [selectedItems, setSelectedItems]: any = useState([]);
   const { addCreateFolder, addCreateNote }: any = useMutateFolderBlocks();
-  const onRenameItem = useCallback((i: any, n: any) => {
-    updateTreeNote.mutate({ index: i.index, data: n });
-  }, []);
 
-  useEffect(() => {});
+  const onRenameItem = useCallback(
+    (item: TreeItem, name: string) => {
+      updateTreeNote.mutate({ index: item.index, data: name });
+    },
+    [updateTreeNote]
+  );
 
-  const onMouse = useCallback((e: any) => {
-    dispatch(
-      setItemIndex({
-        index: e,
-      })
-    );
-  }, []);
+  const onMouse = useCallback(
+    (itemIndex: any) => {
+      dispatch(setItemIndex({ index: itemIndex }));
+    },
+    [dispatch]
+  );
 
   // const onDoubleClick = useCallback((e: any, c: any) => {
   //   e.stopPropagation();
   //   c.startRenamingItem();
   // }, []);
 
-  const onClickCreateFolderModal = useCallback((n: any, m: any, i: any) => {
-    dispatch(resetNoteBlocks());
-    dispatch(
-      setTitleId({
-        index: m.index,
-        dataItem: m.data.title,
-        dataIcon: m.data.icon,
-        dataImage: m.data.image,
-        dataType: m.data.type,
-      })
-    );
-    dispatch(
-      setItemIndex({
-        index: m.index,
-      })
-    );
-  }, []);
+  const onClickCreateFolderModal = useCallback(
+    (item: any) => {
+      dispatch(resetNoteBlocks());
+      dispatch(
+        setTitleId({
+          index: item.index,
+          dataItem: item.data.title,
+          dataIcon: item.data.icon,
+          dataImage: item.data.image,
+          dataType: item.data.type,
+        })
+      );
+      dispatch(setItemIndex({ index: item.index }));
+    },
+    [dispatch]
+  );
 
   const onClickCreateItem = useCallback(
-    (item: any, isFolder: boolean, dataType: any) => {
+    (item: TreeItem, isFolder: boolean, dataType: string) => {
       const uuid = uid();
       dispatch(
         setComplexFolder({
           index: uuid,
           canMove: true,
-          isFolder: isFolder,
+          isFolder,
           children: [],
           data: {
             title: "無題",
@@ -104,26 +106,19 @@ export const NoteTreeCompose = memo(() => {
         })
       );
       dispatch(resetSearchName());
+      const mutationData = {
+        index: uuid,
+        parentId: item.index,
+        type: dataType,
+      };
       if (isFolder) {
-        addCreateFolder.mutate({
-          index: uuid,
-          parentId: item.index,
-          type: dataType,
-        });
+        addCreateFolder.mutate(mutationData);
       } else {
-        addCreateNote.mutate({
-          index: uuid,
-          parentId: item.index,
-          type: dataType,
-        });
+        addCreateNote.mutate(mutationData);
       }
-      dispatch(
-        setTreeIdGet({
-          id: uuid,
-        })
-      );
+      dispatch(setTreeIdGet({ id: uuid }));
     },
-    []
+    [dispatch, addCreateFolder, addCreateNote]
   );
 
   const onClickFolderCreate = useCallback((item: any, dataType: any) => {
@@ -142,18 +137,15 @@ export const NoteTreeCompose = memo(() => {
     (targetIndex: any) => {
       const objectData: any = {};
       const arrayData: any = [];
-      const localStringData: any = localStorage.getItem("noteTree");
-      const localObjectData = JSON.parse(localStringData);
-      Object.keys(localObjectData).forEach((key: any) => {
-        if (localObjectData[key].isFolder) {
-          localObjectData[key].children?.filter((child: any) => {
-            if (targetIndex.includes(String(child))) {
-              arrayData.push(String(child));
-              objectData[key] = arrayData;
-            }
-          });
-        }
+      Object.keys(ic).forEach((key: any) => {
+        ic[key].children?.filter((child: any) => {
+          if (targetIndex.includes(String(child))) {
+            arrayData.push(String(child));
+            objectData[key] = arrayData;
+          }
+        });
       });
+      console.log(ic, objectData);
       return objectData;
     },
     [ic]
@@ -168,7 +160,9 @@ export const NoteTreeCompose = memo(() => {
       const itemIds: string[] = items
         .map((item) => item.index)
         .filter((id) => !!id);
+      console.log(itemIds);
       const fileTree = clearTargetInChildren(itemIds);
+      console.log(fileTree);
       updateTreeSort.mutate({
         index: "index",
         target: target.parentItem,
@@ -189,6 +183,7 @@ export const NoteTreeCompose = memo(() => {
       const itemIds: string[] = items
         .map((item) => item.index)
         .filter((id) => !!id);
+      console.log(itemIds);
       const fileTree = clearTargetInChildren(itemIds);
       updateTreeSort.mutate({
         index: "index",
@@ -198,7 +193,7 @@ export const NoteTreeCompose = memo(() => {
         fileTree,
       });
     },
-    []
+    [clearTargetInChildren, updateTreeSort]
   );
 
   const onDrop = useCallback(
@@ -214,20 +209,13 @@ export const NoteTreeCompose = memo(() => {
           break;
       }
     },
-    []
+    [onDropBetweenItems, onDropItem]
   );
 
   if (!ic) return null;
   if (ic) {
     return (
-      <div
-        style={{
-          textOverflow: "ellipsis",
-          overflow: "hidden",
-          whiteSpace: "nowrap",
-        }}
-        className="revezone-menu-container w-[calc(100%-0rem)] z-0"
-      >
+      <div className="revezone-menu-container w-[calc(100%-0rem)] z-0">
         <div className="menu-list border-slate-100 px-1 pt-2">
           <ControlledTreeEnvironment
             items={notJournalItem(ic)}
@@ -331,12 +319,10 @@ export const NoteTreeCompose = memo(() => {
                               <div
                                 className="ml-2 truncate pr-2 text-sm text-blue-gray-500"
                                 onClick={() => {
-                                  onClickCreateFolderModal(2, item, item.id),
-                                    getData(item);
+                                  onClickCreateFolderModal(item), getData(item);
                                 }}
                                 onDragEnter={() => {
-                                  onClickCreateFolderModal(2, item, item.id),
-                                    getData(item);
+                                  onClickCreateFolderModal(item), getData(item);
                                 }}
                               >
                                 {title ? truncateText(title, 10) : "無題"}

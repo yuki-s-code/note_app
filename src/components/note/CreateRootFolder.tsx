@@ -10,7 +10,6 @@ import { useAppDispatch, useAppSelector } from "../../libs/app/hooks";
 import uid from "../../libs/utils/uid";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
 import { FcFolder, FcDocument, FcDataSheet } from "react-icons/fc";
-// import { CalendarDaysIcon, PaletteIcon } from "lucide-react";
 
 const CreateRootFolder: FC = memo(() => {
   const dispatch = useAppDispatch();
@@ -72,9 +71,6 @@ const CreateRootFolder: FC = memo(() => {
   const submitSheetHandler = useCallback(() => {
     submitItemHandler(false, "sheet");
   }, []);
-  // const submitExcalidrawHandler = useCallback(() => {
-  //   submitItemHandler(false, "excalidraw");
-  // }, []);
 
   return (
     <div className=" w-28 bg-transparent rounded-lg text-gray-400 font-bold ml-4 mt-4">

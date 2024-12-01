@@ -2,7 +2,7 @@ import { useQuery } from "react-query";
 import axios from "axios";
 import { HASH } from "../../types/board";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/boards";
 
 export const useQueryAllHash = () => {
   const getAllHash = async () => {

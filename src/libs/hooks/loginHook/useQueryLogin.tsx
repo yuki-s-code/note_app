@@ -2,7 +2,7 @@ import { useQuery } from "react-query";
 import axios from "axios";
 import { USER } from "../../types/login";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/auth";
 
 // eslint-disable-next-line import/prefer-default-export
 export const useQueryUser = (id: any, pass: any) => {

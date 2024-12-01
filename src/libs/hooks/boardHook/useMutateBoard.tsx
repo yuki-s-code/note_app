@@ -1,7 +1,9 @@
+//useMutateBoard.tsx
+
 import axios from "axios";
 import { useQueryClient, useMutation } from "react-query";
 
-const apiUrl = "http://localhost:8088";
+const apiUrl = "http://localhost:8088/boards";
 
 // eslint-disable-next-line import/prefer-default-export
 export const useMutateBoard = () => {
@@ -46,11 +48,29 @@ export const useMutateBoard = () => {
       },
     }
   );
+  const boardFollowMutation = useMutation(
+    (board) => axios.post(`${apiUrl}/board_follow`, board),
+    {
+      onSuccess: (res: any) => {
+        queryClient.invalidateQueries({ queryKey: ["board"] });
+      },
+    }
+  );
+  const boardDeleteFollowMutation = useMutation(
+    (board) => axios.post(`${apiUrl}/board_delete_follow`, board),
+    {
+      onSuccess: (res: any) => {
+        queryClient.invalidateQueries({ queryKey: ["board"] });
+      },
+    }
+  );
   return {
     createBoardMutation,
     editedBoardMutation,
     addBoardCommentMutation,
     editedBoardCommentMutation,
     addBoardHashMutation,
+    boardFollowMutation,
+    boardDeleteFollowMutation,
   };
 };

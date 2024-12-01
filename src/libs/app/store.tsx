@@ -3,7 +3,6 @@ import navReducer from "../../slices/navSlice";
 import userReducer from "../../slices/userSlice";
 import noteReducer from "../../slices/noteSlice";
 import boardReducer from "../../slices/boardSlice";
-import taskReducer from "../../slices/taskSlice";
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +10,6 @@ export const store = configureStore({
     note: noteReducer,
     nav: navReducer,
     board: boardReducer,
-    task: taskReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

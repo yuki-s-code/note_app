@@ -17,6 +17,7 @@ import { NOTEBLOCKS } from "@/libs/types/note";
 import { Link } from "react-router-dom";
 import usePagination from "./utils/usePagination";
 import Fuse from "fuse.js";
+import { highlightText } from "./utils/highlightText";
 
 export const SearchFusehNote = ({
   searchText,
@@ -63,7 +64,7 @@ export const SearchFusehNote = ({
   };
 
   const getDataItem = async (m: any) => {
-    const apiUrl = "http://localhost:8088";
+    const apiUrl = "http://localhost:8088/notes";
     return await axios.get<NOTEBLOCKS>(`${apiUrl}/get_folder`, {
       params: {
         id: m,
@@ -103,32 +104,6 @@ export const SearchFusehNote = ({
       const result = fuse.search(searchText);
       const sortedData = result.sort((a: any, b: any) => a.score - b.score);
       return sortedData;
-    };
-    //ハイライト
-    const highlightText = (text: any, indices: any) => {
-      const parts = [];
-      let lastIndex = 0;
-
-      indices.forEach((indexArr: any) => {
-        const [start, end] = indexArr;
-        if (start > lastIndex) {
-          parts.push(
-            <span key={lastIndex}>{text.substring(lastIndex, start)}</span>
-          );
-        }
-        parts.push(
-          <span key={start} style={{ fontWeight: "bold", color: "orange" }}>
-            {text.substring(start, end + 1)}
-          </span>
-        );
-        lastIndex = end + 1;
-      });
-
-      if (lastIndex < text.length) {
-        parts.push(<span key={lastIndex}>{text.substring(lastIndex)}</span>);
-      }
-
-      return parts;
     };
 
     return (

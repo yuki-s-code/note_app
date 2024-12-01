@@ -1,3 +1,5 @@
+//note.ts
+
 export interface NOTEBLOCKS {
   id: string;
   contents: any;
@@ -67,4 +69,10 @@ export interface APPDESIGN {
 }
 export interface MENTIONPEEK {
   peekDisplay: boolean
+}
+
+export interface CODESTATEITEM {
+  id: string;
+  code: string;
+  language: string;
 }

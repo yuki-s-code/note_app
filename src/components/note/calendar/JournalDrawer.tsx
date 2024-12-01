@@ -1,3 +1,5 @@
+//JournalDrawer.tsx
+
 import { JournalDrawerTop } from "./JournalDrawerTop";
 
 export const JournalDrawer = () => {
@@ -7,3 +9,4 @@ export const JournalDrawer = () => {
     </div>
   );
 };
+export default JournalDrawer;

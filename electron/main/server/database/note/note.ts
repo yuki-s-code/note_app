@@ -2,6 +2,8 @@
 
 import NeDB from 'nedb';
 import path from 'path';
+import moji from "moji";
+import TinySegmenter from "tiny-segmenter";
 
 // インターフェース定義
 export interface NoteTree {
@@ -18,12 +20,15 @@ export interface NoteTree {
   canRename: boolean;
   roots: boolean;
   bookmarks: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface NoteFolder {
   id: string;
   title: string;
   contents: any;
+  searchableContents: string; // 追加
   pageLinks: string[];
   user: string;
   parent?: string;
@@ -54,6 +59,17 @@ export interface NoteTrash {
   updatedAt: Date;
 }
 
+// 検索結果のインターフェース
+export interface SearchResult {
+  id: string;
+  title: string;
+  icon: string;
+  image: string;
+  type: string;
+  contents: any;
+  updatedAt: Date;
+}
+
 // オプション型の定義
 type UpdateOptions = {
   multi?: boolean;
@@ -75,6 +91,63 @@ function initializeDB<T>(filename: string): NeDB<T> {
       console.log(`${filename} loaded`, err ? `Error: ${err}` : 'Success');
     },
   });
+}
+/**
+ * contents オブジェクトからすべてのテキストを抽出する再帰関数
+ * @param contentItems - contents の配列
+ * @returns 抽出されたテキストの結合文字列
+ */
+function extractTextFromContents(contentItems: any[]): string {
+  let text = '';
+
+  contentItems.forEach(item => {
+    if (item.type === 'text' && item.text) {
+      text += item.text + ' ';
+    }
+
+    // children が存在する場合、再帰的にテキストを抽出
+    if (item.children && Array.isArray(item.children)) {
+      text += extractTextFromContents(item.children);
+    }
+
+    // content が存在する場合、再帰的にテキストを抽出
+    if (item.content) {
+      if (Array.isArray(item.content)) {
+        text += extractTextFromContents(item.content);
+      } else if (typeof item.content === 'object') {
+        if (item.content.rows) { // テーブルの場合
+          item.content.rows.forEach((row: any) => {
+            row.cells.forEach((cell: any[]) => {
+              cell.forEach(cellItem => {
+                if (cellItem.type === 'text' && cellItem.text) {
+                  text += cellItem.text + ' ';
+                }
+              });
+            });
+          });
+        } else {
+          text += extractTextFromContents([item.content]);
+        }
+      }
+    }
+  });
+
+  return text.trim();
+}
+
+const segmenter = new TinySegmenter();
+
+function _tokenize(text: any) {
+  return segmenter.segment(text)
+}
+
+function tokenize(text: any) {
+    const query = moji(text).convert("HK", "ZK").convert("ZS", "HS").convert("ZE", "HE").toString().trim()
+    return _tokenize(query).map((word: any) => {
+        if (word !== " ") {
+            return moji(word).convert("HG", "KK").toString().toLowerCase();
+        }
+    }).filter((v: any) => v)
 }
 
 // データベースの初期化
@@ -151,7 +224,6 @@ const noteDataSheetDBAsync = promisifyNeDB<NoteDataSheet>(noteDataSheetDB);
 const noteTrashDBAsync = promisifyNeDB<NoteTrash>(noteTrashDB);
 
 // データ取得関数
-
 export const getTree = async (): Promise<NoteTree[]> => {
   return await noteTreeDBAsync.find({});
 };
@@ -188,8 +260,6 @@ export const getMyParentFolder = async (myParentId: string): Promise<NoteFolder[
   return await noteFolderDBAsync.find({ id: myParentId });
 };
 
-// フォルダおよびノートの作成関数
-
 export const addRootCreateFolder = async (
   uuid: string,
   data: { title: string; icon: string; image: string },
@@ -210,19 +280,22 @@ export const addRootCreateFolder = async (
       canRename: true,
       roots: true,
       bookmarks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const regDocs: NoteFolder = {
       id: uuid,
       title: data.title,
-      contents: {},
+      contents: [], // 空の配列として初期化
+      searchableContents: '', // 初期値として空文字列
       pageLinks: [],
       user: "all",
     };
 
     await noteTreeDBAsync.insert(regDoc);
-    const newDoc = await noteFolderDBAsync.insert(regDocs); // newDoc: NoteFolder
-    return newDoc;
+    await noteFolderDBAsync.insert(regDocs);
+    return regDocs;
   } catch (error) {
     console.error("Error in addRootCreateFolder:", error);
     return null;
@@ -249,6 +322,8 @@ export const addRootCreateNote = async (
       canRename: true,
       roots: true,
       bookmarks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     await noteTreeDBAsync.insert(regDoc);
@@ -262,6 +337,7 @@ export const addRootCreateNote = async (
           id: uuid,
           title: data.title,
           contents: {},
+          searchableContents: '', // 初期値として空文字列
           pageLinks: [],
           user: "all",
         }) as NoteFolder;
@@ -278,7 +354,6 @@ export const addRootCreateNote = async (
         console.error("Invalid type provided in addRootCreateNote");
         break;
     }
-
     return newDoc;
   } catch (error) {
     console.error("Error in addRootCreateNote:", error);
@@ -309,12 +384,14 @@ export const addJournals = async (
       canRename: true,
       roots: true,
       bookmarks: [],
+      updatedAt: new Date(),
     };
 
     const regDocs: NoteFolder = {
       id: uuid,
       title: uuid,
-      contents: journalData,
+      contents: journalData, // 配列として渡す
+      searchableContents: extractTextFromContents(journalData as any[]) || '', // 追加
       pageLinks: [],
       user: "all",
     };
@@ -365,12 +442,15 @@ export const addCreateFolder = async (
       canRename: true,
       roots: false,
       bookmarks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const regDocs: NoteFolder = {
       id: index,
       title: "無題",
-      contents: {},
+      contents: [], // 空の配列として初期化
+      searchableContents: '', // 初期値として空文字列
       pageLinks: [],
       user: "all",
       parent: parentId,
@@ -378,6 +458,8 @@ export const addCreateFolder = async (
 
     await noteTreeDBAsync.update({ index: parentId }, { $push: { children: index } }, {});
     await noteTreeDBAsync.insert(regDoc);
+    // searchableContents を生成（空の場合は空文字列）
+    regDocs.searchableContents = extractTextFromContents(regDocs.contents as any[]) || '';
     await noteFolderDBAsync.insert(regDocs);
     return regDocs;
   } catch (error) {
@@ -385,7 +467,6 @@ export const addCreateFolder = async (
     return null;
   }
 };
-
 export const addCreateNote = async (
   index: string,
   parentId: string,
@@ -408,6 +489,8 @@ export const addCreateNote = async (
       canRename: true,
       roots: false,
       bookmarks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     await noteTreeDBAsync.update({ index: parentId }, { $push: { children: index } }, {});
@@ -420,7 +503,8 @@ export const addCreateNote = async (
         newDoc = await noteFolderDBAsync.insert({
           id: index,
           title: "無題",
-          contents: {},
+          contents: [], // 空の配列として初期化
+          searchableContents: '', // 初期値として空文字列
           pageLinks: [],
           user: "all",
           parent: parentId,
@@ -429,7 +513,7 @@ export const addCreateNote = async (
       case "sheet":
         newDoc = await noteDataSheetDBAsync.insert({
           id: index,
-          contents: {},
+          contents: [], // 空の配列として初期化
           pageLinks: [],
           user: "all",
         }) as NoteDataSheet;
@@ -437,6 +521,12 @@ export const addCreateNote = async (
       default:
         console.error("Invalid type provided in addCreateNote");
         break;
+    }
+
+    // searchableContents を生成（NoteFolder の場合）
+    if (newDoc && 'searchableContents' in newDoc) {
+      newDoc.searchableContents = extractTextFromContents(newDoc.contents as any[]) || '';
+      await noteFolderDBAsync.update({ id: index }, { $set: { searchableContents: newDoc.searchableContents } }, {});
     }
 
     return newDoc;
@@ -447,7 +537,6 @@ export const addCreateNote = async (
 };
 
 // ツリーの更新関数
-
 export const updateTree = async (
   index: string,
   title: string
@@ -455,7 +544,7 @@ export const updateTree = async (
   try {
     const numAffected = await noteTreeDBAsync.update(
       { index },
-      { $set: { "data.title": title } },
+      { $set: { "data.title": title, updatedAt: new Date() } },
       {}
     );
     return numAffected;
@@ -472,7 +561,7 @@ export const updateTreeIcon = async (
   try {
     const numAffected = await noteTreeDBAsync.update(
       { index },
-      { $set: { "data.icon": icon } },
+      { $set: { "data.icon": icon, updatedAt: new Date() } },
       {}
     );
     return numAffected;
@@ -489,7 +578,7 @@ export const updateTreeImage = async (
   try {
     const numAffected = await noteTreeDBAsync.update(
       { index },
-      { $set: { "data.image": image } },
+      { $set: { "data.image": image, updatedAt: new Date() } },
       {}
     );
     return numAffected;
@@ -508,14 +597,14 @@ export const updateTreeBookMarked = async (
     if (trueToFalse) {
       const numAffected = await noteTreeDBAsync.update(
         { index },
-        { $push: { bookmarks: data } },
+        { $push: { bookmarks: data }, updatedAt: new Date() },
         {}
       );
       return numAffected;
     } else {
       const numAffected = await noteTreeDBAsync.update(
         { index },
-        { $pull: { bookmarks: data } },
+        { $pull: { bookmarks: data }, updatedAt: new Date() },
         {}
       );
       return numAffected;
@@ -531,15 +620,15 @@ export const updateTreeType = async (
   type: string
 ): Promise<number | null> => {
   try {
-    const typeItem = type == "folder"?true:false
+    const typeItem = type === "folder" ? true : false;
     const numAffected = await noteTreeDBAsync.update(
       { index },
-      { $set: { "data.type": type, isFolder:typeItem } },
+      { $set: { "data.type": type, isFolder: typeItem, updatedAt: new Date() } },
       {}
     );
     return numAffected;
   } catch (error) {
-    console.error("Error in updateTreeImage:", error);
+    console.error("Error in updateTreeType:", error);
     return null;
   }
 };
@@ -558,7 +647,7 @@ export const updateTreeSort = async (
           fileTree[key].map(async (d) => {
             return noteTreeDBAsync.update(
               { index: d },
-              { $set: { roots: false } },
+              { $set: { roots: false, updatedAt: new Date() } },
               {}
             );
           })
@@ -568,7 +657,7 @@ export const updateTreeSort = async (
         fileTree[key].map(async (childIndex) => {
           return noteTreeDBAsync.update(
             { index: key },
-            { $pull: { children: childIndex } },
+            { $pull: { children: childIndex }, updatedAt: new Date() },
             {}
           );
         })
@@ -583,7 +672,7 @@ export const updateTreeSort = async (
         data.map(async (d) => {
           return noteTreeDBAsync.update(
             { index: d },
-            { $set: { roots: true } },
+            { $set: { roots: true, updatedAt: new Date() } },
             {}
           );
         })
@@ -591,7 +680,7 @@ export const updateTreeSort = async (
     } else {
       await noteTreeDBAsync.update(
         { index: target },
-        { $push: { children: { $each: data } } },
+        { $push: { children: { $each: data } }, updatedAt: new Date() },
         {}
       );
     }
@@ -604,7 +693,6 @@ export const updateTreeSort = async (
 };
 
 // ゴミ箱関連関数
-
 export const trashInsert = async (index: string): Promise<number | null> => {
   try {
     const docs: any = await noteTreeDBAsync.find({ index });
@@ -624,7 +712,6 @@ export const getAllTrash = async (limit: number): Promise<NoteTrash[]> => {
 };
 
 // コンテンツ編集関数
-
 export const editedFolderContents = async (
   id: string,
   contents: any,
@@ -632,17 +719,19 @@ export const editedFolderContents = async (
 ): Promise<number | null> => {
   const { added, removed } = pageLinks;
   try {
-    const update = { $set: { contents } };
+    const update = { 
+      $set: { 
+        contents, 
+        updatedAt: new Date(),
+        searchableContents: extractTextFromContents(contents as any[]) || '' // 追加
+      } 
+    };
     const numAffected = await noteFolderDBAsync.update({ id }, update, {});
 
     // Handle pageLinks additions
     if (added.length) {
       const addPromises = added.map((linkId) =>
-        noteFolderDBAsync.update(
-          { id: linkId },
-          { $push: { pageLinks: id } },
-          {}
-        )
+        noteFolderDBAsync.update({ id: linkId }, { $push: { pageLinks: id } }, {})
       );
       await Promise.all(addPromises);
     }
@@ -650,11 +739,7 @@ export const editedFolderContents = async (
     // Handle pageLinks removals
     if (removed.length) {
       const removePromises = removed.map((linkId) =>
-        noteFolderDBAsync.update(
-          { id: linkId },
-          { $pull: { pageLinks: id } },
-          {}
-        )
+        noteFolderDBAsync.update({ id: linkId }, { $pull: { pageLinks: id } }, {})
       );
       await Promise.all(removePromises);
     }
@@ -671,7 +756,7 @@ export const editedDataSheetContents = async (
   contents: any
 ): Promise<number | null> => {
   try {
-    const update = { $set: { contents } };
+    const update = { $set: { contents, updatedAt: new Date() } };
     const numAffected = await noteDataSheetDBAsync.update({ id }, update, {});
     return numAffected;
   } catch (error) {
@@ -692,7 +777,8 @@ export const newBlocks = async (
     const regDoc: NoteFolder = {
       id,
       title: editorTitle,
-      contents,
+      contents, // 配列として渡す
+      searchableContents: extractTextFromContents(contents as any[]) || '', // 追加
       pageLinks: [],
       user,
     };
@@ -700,7 +786,7 @@ export const newBlocks = async (
     await noteFolderDBAsync.insert(regDoc);
     const numAffected = await noteTreeDBAsync.update(
       { index: id },
-      { $set: { "data.title": editorTitle, "data.icon": icon } },
+      { $set: { "data.title": editorTitle, "data.icon": icon, updatedAt: new Date() } },
       {}
     );
     return numAffected;
@@ -715,7 +801,7 @@ export const selectParent = async (id: string, parentId: string): Promise<number
   try {
     const numAffected = await noteFolderDBAsync.update(
       { id },
-      { $set: { parent: parentId } },
+      { $set: { parent: parentId, updatedAt: new Date() } },
       {}
     );
     return numAffected;
@@ -735,4 +821,80 @@ export const selectDelete = async (id: string): Promise<number | null> => {
     console.error("Error in selectDelete:", error);
     return null;
   }
+};
+
+function escapeRegex(str: string) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// クエリをトークン化・カタカナ化する関数（既存tokenize利用）
+function tokenizeForSearch(query: string) {
+  return tokenize(query); // tokenize関数はカタカナ＋lowercase変換済み
+}
+
+// カタカナ→ひらがな変換
+function toHiragana(katakana: string) {
+  return moji(katakana).convert("KK","HG").toString();
+}
+export const searchFolders = async (query: string, page: number, limit: number): Promise<{ results: SearchResult[]; hasMore: boolean }> => {
+  const skip = (page - 1) * limit;
+
+  // クエリのトークン化と正規表現の作成
+  const katakanaTokens: any[] = tokenizeForSearch(query);
+  const tokenPatterns = katakanaTokens.map(katakana => {
+    const hiragana = toHiragana(katakana);
+    return `(?=.*(?:${escapeRegex(katakana)}|${escapeRegex(hiragana)}))`;
+  });
+  const combinedPattern = tokenPatterns.join('') + '.*';
+  const regex = new RegExp(combinedPattern, 'i');
+
+  // タイトルと検索可能なコンテンツにマッチするツリーの取得
+  const titleMatches = await noteTreeDBAsync.find(
+    { 'data.title': regex },
+    { sort: { updatedAt: -1 } }
+  );
+  const folderMatches = await noteFolderDBAsync.find(
+    { 'searchableContents': regex }
+  );
+  const folderIds = folderMatches.map(folder => folder.id);
+  const contentMatches = await noteTreeDBAsync.find(
+    { index: { $in: folderIds } },
+    { sort: { updatedAt: -1 } }
+  );
+
+  // 結果の統合と重複の排除
+  const combined = [...titleMatches, ...contentMatches];
+  const uniqueMap = new Map<string, NoteTree>();
+  combined.forEach(item => {
+    if (!uniqueMap.has(item.index)) {
+      uniqueMap.set(item.index, item);
+    }
+  });
+  const uniqueResults = Array.from(uniqueMap.values());
+
+  // 更新日時で降順ソート
+  uniqueResults.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+  // ページネーション
+  const paginatedResults = uniqueResults.slice(skip, skip + limit);
+  const hasMore = uniqueResults.length > page * limit;
+
+  // 検索結果のマッピング
+  const searchResults: SearchResult[] = await Promise.all(
+    paginatedResults.map(async (tree) => {
+      const folder = await noteFolderDBAsync.findOne({ id: tree.index });
+      return {
+        id: tree.index,
+        title: tree.data.title,
+        icon: tree.data.icon,
+        image: tree.data.image,
+        type: tree.data.type,
+        contents: folder?.contents || "",
+        searchableContents: folder?.searchableContents || "",
+        updatedAt: tree.updatedAt,
+      };
+    })
+  );
+
+  return { results: searchResults, hasMore };
 };

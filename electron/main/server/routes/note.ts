@@ -16,6 +16,7 @@ import {
   getTree,
   getTreeId,
   newBlocks,
+  searchFolders,
   selectDelete,
   selectParent,
   trashInsert,
@@ -386,6 +387,22 @@ expressApp.get('/get_all_search', async (req: any, res: any) => {
     res.json({ status: true, textOb, docs, msg: '検索できました。' });
   } catch (err: any) {
     res.json({ status: false, msg: '検索できませんでした', error: err.message });
+  }
+});
+
+// 検索エンドポイントの追加
+expressApp.get('/search', async (req: any, res: any) => {
+  const { query, page = 1, limit = 20 } = req.query;
+  
+  if (!query) {
+    return res.status(400).json({ status: false, msg: '検索クエリが必要です。' });
+  }
+
+  try {
+    const { results, hasMore } = await searchFolders(query, parseInt(page, 10), parseInt(limit, 10));
+    res.json({ status: true, results, hasMore, msg: '検索に成功しました。' });
+  } catch (err: any) {
+    res.status(500).json({ status: false, msg: '検索に失敗しました。', error: err.message });
   }
 });
 

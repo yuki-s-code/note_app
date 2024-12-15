@@ -76,3 +76,13 @@ export interface CODESTATEITEM {
   code: string;
   language: string;
 }
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  icon: string;
+  image: string;
+  type: string;
+  contents: any;
+  updatedAt: Date;
+}

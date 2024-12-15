@@ -1,10 +1,22 @@
 //useQueryFolderBlocks.tsx
 
-import { useQuery } from "react-query";
+import { useInfiniteQuery, useQuery } from "react-query";
 import axios from "axios";
-import { COMPLEXTREEFOLDER, NOTEBLOCKS } from "../../types/note";
+import { COMPLEXTREEFOLDER, NOTEBLOCKS, SearchResult } from "../../types/note";
 
 const apiUrl = "http://localhost:8088/notes";
+
+interface SearchResponse {
+  status: boolean;
+  results: SearchResult[];
+  hasMore: boolean;
+  msg: string;
+}
+
+interface SearchPage {
+  results: SearchResult[];
+  hasMore: boolean;
+}
 
 // eslint-disable-next-line import/prefer-default-export
 export const useQueryTreeFolder = () => {
@@ -220,4 +232,38 @@ export const useQueryAllSearchFolderBlocks = () => {
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
+};
+
+export const useSearchFolders = (searchText: string, limit: number = 4) => {
+  return useInfiniteQuery<SearchPage, Error>(
+    ["searchFolders", searchText],
+    async ({ pageParam = 1 }) => {
+      const response = await axios.get<SearchResponse>(
+        "http://localhost:8088/notes/search",
+        {
+          params: {
+            query: searchText,
+            page: pageParam,
+            limit,
+          },
+        }
+      );
+
+      if (response.data.status) {
+        return {
+          results: response.data.results,
+          hasMore: response.data.hasMore,
+        };
+      } else {
+        throw new Error(response.data.msg || "検索に失敗しました。");
+      }
+    },
+    {
+      enabled: searchText.length >= 2, // Only run if searchText is at least 2 characters
+      getNextPageParam: (lastPage, pages) =>
+        lastPage.hasMore ? pages.length + 1 : undefined,
+      staleTime: 0,
+      refetchOnWindowFocus: true,
+    }
+  );
 };

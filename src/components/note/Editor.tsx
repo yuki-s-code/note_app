@@ -84,7 +84,6 @@ import {
 } from "./utils/ArrowConversionExtension";
 import { BlockQuote } from "./BlockQuote";
 import CharacterCount from "@tiptap/extension-character-count";
-import { Draw, insertDraw } from "blocknote-draw";
 import { DiffNoteViewr } from "./DiffNoteViewr";
 import { formatHTML } from "./utils/formatHTML";
 
@@ -243,8 +242,6 @@ function Editor({ initialContent, result, setCodeItem }: any) {
       //@ts-ignore
       insertPDF(editor),
       //@ts-ignore
-      insertDraw(editor),
-      //@ts-ignore
       insertCode(editor),
     ],
     []
@@ -277,7 +274,6 @@ function Editor({ initialContent, result, setCodeItem }: any) {
           alert: Alert,
           blockquote: BlockQuote,
           pdf: PDF,
-          draw: Draw,
           //@ts-ignore
           procode: CodeBlock,
         },

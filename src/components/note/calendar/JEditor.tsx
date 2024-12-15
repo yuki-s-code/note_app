@@ -51,7 +51,6 @@ import {
   DableLeftConversionExtension,
   DableRightConversionExtension,
 } from "../utils/ArrowConversionExtension";
-import { Draw, insertDraw } from "blocknote-draw";
 import CharacterCount from "@tiptap/extension-character-count";
 import { Tooltip } from "@material-tailwind/react";
 import { motion } from "framer-motion";
@@ -78,7 +77,6 @@ export const JEditor = ({ initialContent, setCodeItem }: any) => {
       alert: Alert,
       blockquote: BlockQuote,
       pdf: PDF,
-      draw: Draw,
       //@ts-ignore
       procode: CodeBlock,
     },
@@ -111,8 +109,6 @@ export const JEditor = ({ initialContent, setCodeItem }: any) => {
       insertBlockQuote(editor),
       //@ts-ignore
       insertPDF(editor),
-      //@ts-ignore
-      insertDraw(editor),
       //@ts-ignore
       insertCode(editor),
     ],

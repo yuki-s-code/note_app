@@ -1,13 +1,12 @@
 // server/database/bot/bot.ts
-
-import NeDB from 'nedb';
+import Datastore from 'nedb';
 import path from 'path';
 
-// 型定義
+// ── 型定義 ─────────────────────────────────────────────────────────────
 export interface Bot {
   id: string;
-  category: string[]; // カテゴリーのIDまたは名前の配列
-  intentId: string; // 関連するインテントのID
+  category: string[]; // カテゴリーIDまたは名称の配列
+  intentId: string;
   questions: string[];
   answer: string;
   keywords: string[];
@@ -17,44 +16,39 @@ export interface Bot {
 export interface Category {
   id: string;
   category: string; // カテゴリー名
-  color: string; // カラー情報
+  color: string;    // カラー情報
 }
 
 export interface Intent {
   id: string;
-  name: string; // インテント名
-  categoryId: string; // 関連するカテゴリーのID
-  description?: string; // インテントの説明（任意）
+  name: string;      // インテント名
+  categoryId: string;
+  description?: string;
 }
 
-// bot.ts に以下の関数を追加
-export const getIntentById = async (id: string): Promise<Intent | null> => {
-  const intent = await intentDBAsync.findOne({ id });
-  return intent;
-};
-
-// データベース初期化関数
-function initializeDB<T>(filename: string): NeDB<T> {
-  return new NeDB<T>({
+// ── DB 初期化 ─────────────────────────────────────────────────────────────
+function initializeDB<T>(filename: string): Datastore<T> {
+  return new Datastore<T>({
     filename: path.join(__dirname, filename).replace('app.asar', 'app.asar.unpacked'),
     autoload: true,
     timestampData: true,
-    onload: (err: any) => {
-      console.log(`${filename} loaded`, err ? `Error: ${err}` : 'Success');
+    onload: (err: Error | null) => {
+      console.log(`${filename} loaded`, err ? `Error: ${err.message}` : 'Success');
     },
   });
 }
 
-// データベースの初期化
 export const botDB = initializeDB<Bot>('data/bot.db');
 export const botCategoryDB = initializeDB<Category>('data/botCategory.db');
 export const intentDB = initializeDB<Intent>('data/intent.db');
 
-// NeDB のメソッドを Promise 化
-function promisifyNeDB<T>(db: NeDB<T>) {
+// ── NeDB の Promise 化 ───────────────────────────────────────────────────
+type QueryOptions = { sort?: any; skip?: number; limit?: number };
+
+function promisifyNeDB<T>(db: Datastore<T>) {
   return {
-    find: (query: any, options: any = {}): Promise<T[]> => {
-      return new Promise((resolve, reject) => {
+    find: (query: Partial<T>, options: QueryOptions = {}): Promise<T[]> =>
+      new Promise((resolve, reject) => {
         let cursor = db.find(query);
         if (options.sort) cursor = cursor.sort(options.sort);
         if (options.skip) cursor = cursor.skip(options.skip);
@@ -63,156 +57,118 @@ function promisifyNeDB<T>(db: NeDB<T>) {
           if (err) reject(err);
           else resolve(docs);
         });
-      });
-    },
-    findOne: (query: any): Promise<T | null> => {
-      return new Promise((resolve, reject) => {
+      }),
+    findOne: (query: Partial<T>): Promise<T | null> =>
+      new Promise((resolve, reject) => {
         db.findOne(query, (err, doc) => {
           if (err) reject(err);
           else resolve(doc);
         });
-      });
-    },
-    insert: (doc: T): Promise<T> => {
-      return new Promise((resolve, reject) => {
+      }),
+    insert: (doc: T): Promise<T> =>
+      new Promise((resolve, reject) => {
         db.insert(doc, (err, newDoc) => {
           if (err) reject(err);
           else resolve(newDoc);
         });
-      });
-    },
-    update: (query: any, update: any, options: any = {}): Promise<number> => {
-      return new Promise((resolve, reject) => {
+      }),
+    update: (query: Partial<T>, update: Partial<T> | any, options: any = {}): Promise<number> =>
+      new Promise((resolve, reject) => {
         db.update(query, update, options, (err, numAffected) => {
           if (err) reject(err);
           else resolve(numAffected);
         });
-      });
-    },
-    remove: (query: any, options: any = {}): Promise<number> => {
-      return new Promise((resolve, reject) => {
+      }),
+    remove: (query: Partial<T>, options: any = {}): Promise<number> =>
+      new Promise((resolve, reject) => {
         db.remove(query, options, (err, numRemoved) => {
           if (err) reject(err);
           else resolve(numRemoved);
         });
-      });
-    },
-    count: (query: any): Promise<number> => {
-      return new Promise((resolve, reject) => {
+      }),
+    count: (query: Partial<T>): Promise<number> =>
+      new Promise((resolve, reject) => {
         db.count(query, (err, count) => {
           if (err) reject(err);
           else resolve(count);
         });
-      });
-    },
+      }),
   };
 }
 
-// プロミス化した DB 操作オブジェクト
 const botDBAsync = promisifyNeDB<Bot>(botDB);
 const botCategoryDBAsync = promisifyNeDB<Category>(botCategoryDB);
 const intentDBAsync = promisifyNeDB<Intent>(intentDB);
 
-// すべてのボットをページネーション対応で取得
+// ── CRUD 関数 ─────────────────────────────────────────────────────────────
+// Bot 関連
+export const getBotById = async (id: string): Promise<Bot | null> =>
+  await botDBAsync.findOne({ id });
+
 export const getAllBot = async (
   page: number,
   limit: number
 ): Promise<{ docs: Bot[]; total: number; page: number; totalPages: number }> => {
   const skip = (page - 1) * limit;
   const total = await botDBAsync.count({});
-
   const docs = await botDBAsync.find({}, { skip, limit });
   const totalPages = Math.ceil(total / limit);
   return { docs, total, page, totalPages };
 };
 
-// 新しいボットを追加
-export const addBotCreate = async (botData: Bot): Promise<Bot> => {
-  const newBot = await botDBAsync.insert(botData);
-  return newBot;
-};
+export const addBotCreate = async (botData: Bot): Promise<Bot> =>
+  await botDBAsync.insert(botData);
 
-// QAボットを更新
 export const updateQABot = async (
   id: string,
   updateData: Partial<Bot>
-): Promise<number> => {
-  const numAffected = await botDBAsync.update({ id }, { $set: updateData }, {});
-  return numAffected;
-};
+): Promise<number> =>
+  await botDBAsync.update({ id }, { $set: updateData }, {});
 
-// 新しいカテゴリーを追加
+export const deleteBot = async (id: string): Promise<number> =>
+  await botDBAsync.remove({ id }, {});
+
+export const getBotAllMessages = async (): Promise<Bot[]> =>
+  await botDBAsync.find({});
+
+// カテゴリ関連
 export const insertBotCategory = async (categoryData: Category): Promise<Category> => {
-  const existingCategory = await botCategoryDBAsync.findOne({ category: categoryData.category });
-  if (existingCategory) {
-    throw new Error('このカテゴリーはすでに存在します');
-  }
-  const newCategory = await botCategoryDBAsync.insert(categoryData);
-  return newCategory;
+  const existing = await botCategoryDBAsync.findOne({ category: categoryData.category });
+  if (existing) throw new Error('このカテゴリーはすでに存在します');
+  return await botCategoryDBAsync.insert(categoryData);
 };
 
-// カテゴリーを更新
 export const updateCategoryBot = async (
   id: string,
   updateData: Partial<Category>
-): Promise<number> => {
-  const numAffected = await botCategoryDBAsync.update({ id }, { $set: updateData }, {});
-  return numAffected;
-};
+): Promise<number> =>
+  await botCategoryDBAsync.update({ id }, { $set: updateData }, {});
 
-// すべてのカテゴリーを取得
-export const getAllBotCategory = async (): Promise<Category[]> => {
-  const categories = await botCategoryDBAsync.find({});
-  return categories;
-};
+export const getAllBotCategory = async (): Promise<Category[]> =>
+  await botCategoryDBAsync.find({});
 
-// すべてのインテントを取得
-export const getAllIntents = async (): Promise<Intent[]> => {
-  const intents = await intentDBAsync.find({});
-  return intents;
-};
+// インテント関連
+export const getAllIntents = async (): Promise<Intent[]> =>
+  await intentDBAsync.find({});
 
-// 新しいインテントを追加
 export const addIntent = async (intentData: Intent): Promise<Intent> => {
-  const existingIntent = await intentDBAsync.findOne({ id: intentData.id });
-  if (existingIntent) {
-    throw new Error('このインテントIDは既に存在します。');
-  }
-  const newIntent = await intentDBAsync.insert(intentData);
-  return newIntent;
+  const existing = await intentDBAsync.findOne({ id: intentData.id });
+  if (existing) throw new Error('このインテントIDは既に存在します。');
+  return await intentDBAsync.insert(intentData);
 };
 
-// インテントを削除
-export const deleteIntent = async (id: string): Promise<number> => {
-  const numRemoved = await intentDBAsync.remove({ id }, {});
-  return numRemoved;
-};
+export const deleteIntent = async (id: string): Promise<number> =>
+  await intentDBAsync.remove({ id }, {});
 
-// **追加: カテゴリーIDに基づいてインテントを取得**
-export const getIntentsByCategory = async (categoryId: string): Promise<Intent[]> => {
-  const intents = await intentDBAsync.find({ categoryId });
-  return intents;
-};
+export const getIntentsByCategory = async (categoryId: string): Promise<Intent[]> =>
+  await intentDBAsync.find({ categoryId });
 
-// インテントを更新
 export const updateIntent = async (
   id: string,
   updateData: Partial<Intent>
-): Promise<number> => {
-  const numAffected = await intentDBAsync.update({ id }, { $set: updateData }, {});
-  return numAffected;
-};
+): Promise<number> =>
+  await intentDBAsync.update({ id }, { $set: updateData }, {});
 
-
-// Botを削除する関数を追加
-export const deleteBot = async (id: string): Promise<number> => {
-  const numRemoved = await botDBAsync.remove({ id }, {}); // オプションとして {} を使用
-  return numRemoved;
-};
-
-
-// Promiseベースで再実装
-export const getBotAllMessages = async (): Promise<Bot[]> => {
-  const docs = await botDBAsync.find({});
-  return docs;
-};
+// 補助関数：指定 ID のインテントを取得
+export const getIntentById = async (id: string): Promise<Intent | null> =>
+  await intentDBAsync.findOne({ id });

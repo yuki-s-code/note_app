@@ -33,6 +33,21 @@ export const useQueryTreeFolder = () => {
     refetchOnWindowFocus: true,
   });
 };
+// eslint-disable-next-line import/prefer-default-export
+export const useQueryTreeFolders = () => {
+  const getTreeFolders = async () => {
+    const { data } = await axios.get<COMPLEXTREEFOLDER>(
+      `${apiUrl}/get_folder_trees`
+    );
+    return data;
+  };
+  return useQuery<COMPLEXTREEFOLDER, Error>({
+    queryKey: ["folderBlocks", "tree"],
+    queryFn: getTreeFolders,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+};
 export const useQueryTreeFolderId = (index: any) => {
   const getTreeFolderId = async () => {
     const { data } = await axios.get<COMPLEXTREEFOLDER>(
@@ -48,6 +63,21 @@ export const useQueryTreeFolderId = (index: any) => {
   return useQuery<COMPLEXTREEFOLDER, Error>({
     queryKey: ["folderBlocks", "tree"],
     queryFn: getTreeFolderId,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useQueryAllJournals = () => {
+  const getAllJournals = async () => {
+    // エンドポイント '/get_all_journals' を呼び出してデータを取得
+    const { data } = await axios.get<NOTEBLOCKS>(`${apiUrl}/get_all_journals`);
+    return data;
+  };
+  return useQuery<NOTEBLOCKS, Error>({
+    // キャッシュキーを "folderBlocks", "allJournals" にする例
+    queryKey: ["folderBlocks", "journals"],
+    queryFn: getAllJournals,
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
@@ -262,6 +292,42 @@ export const useSearchFolders = (searchText: string, limit: number = 4) => {
       enabled: searchText.length >= 2, // Only run if searchText is at least 2 characters
       getNextPageParam: (lastPage, pages) =>
         lastPage.hasMore ? pages.length + 1 : undefined,
+      staleTime: 0,
+      refetchOnWindowFocus: true,
+    }
+  );
+};
+export const useQueryJournalsByMonth = (month: string) => {
+  const getJournalsByMonth = async () => {
+    const { data } = await axios.get<NOTEBLOCKS>(
+      `${apiUrl}/get_journals_by_month`,
+      {
+        params: { month },
+      }
+    );
+    return data;
+  };
+
+  return useQuery<NOTEBLOCKS, Error>({
+    queryKey: ["folderBlocks", "journals", month], // クエリキーを具体化
+    queryFn: getJournalsByMonth,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useQueryUncheckedItems = () => {
+  return useQuery<any[], Error>(
+    ["uncheckedItems"],
+    async () => {
+      const response = await axios.get<any>(`${apiUrl}/get_unchecked_items`);
+      if (response.data.status) {
+        return response.data.folders;
+      } else {
+        throw new Error(response.data.msg);
+      }
+    },
+    {
       staleTime: 0,
       refetchOnWindowFocus: true,
     }

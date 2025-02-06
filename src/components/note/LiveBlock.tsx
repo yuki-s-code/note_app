@@ -22,7 +22,7 @@ import {
   setLiveBlock,
   setTitleId,
 } from "@/slices/noteSlice";
-import { Badge, Breadcrumbs, Tooltip } from "@material-tailwind/react";
+import { Breadcrumbs, Tooltip } from "@material-tailwind/react";
 import useSaveKey from "@/libs/utils/useSaveKey";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
 import { truncateText } from "./utils/truncateText";
@@ -30,7 +30,6 @@ import { extractMentionedUsers, getData } from "./utils/getData";
 import {
   ArrowLeftRightIcon,
   BookmarkIcon,
-  CheckIcon,
   FileIcon,
   FolderIcon,
   PrinterIcon,
@@ -55,10 +54,12 @@ export default function LiveBlock() {
   const { open }: any = useAppSelector(selectLiveBlock);
   const [itemBre, setItemBre]: any = useState([]);
   const initialContent: any | null = localStorage.getItem("editorContent");
+
   const pageLink: any | null = localStorage.getItem("editorPageLinks");
 
   const pageLinkObject: any =
     pageLink == null ? [] : new Set(JSON.parse(pageLink));
+
   const result = useMemo(() => {
     return Array.from(pageLinkObject)
       .filter((key: any) => ic.hasOwnProperty(key))
@@ -91,8 +92,6 @@ export default function LiveBlock() {
     const nowMentionSet = new Set(
       nowMention.map((item: any) => item.index) || []
     );
-    console.log("Prev Mention Set:", prevMentionSet);
-    console.log("Now Mention Set:", nowMentionSet);
 
     const pageLinksChanges = {
       added: nowMention
@@ -105,8 +104,7 @@ export default function LiveBlock() {
         .filter((item: any) => prevMentionSet.has(item.index))
         .map((item: any) => item.index),
     };
-    console.log("Page Links Changes:", pageLinksChanges);
-
+    console.log(noteId, initial, pageLinksChanges);
     folderBlocksContentsMutation.mutate(
       {
         id: noteId,
@@ -243,7 +241,8 @@ export default function LiveBlock() {
   if (status === "loading") return <Loding />; // タイポ修正
   if (status === "error") return <Error />;
 
-  const Checked = ({ tf }: { tf: boolean }) => {
+  const Checked = () => {
+    const tf = noteId && ic[noteId].bookmarks.includes(userId);
     return (
       <Tooltip
         content={`${tf ? "ブックマーク済" : "ブックマークされてません"}`}
@@ -257,7 +256,10 @@ export default function LiveBlock() {
           onClick={() => BookMarkChecked()}
           animate={tf ? "click" : "initial"}
         >
-          <BookmarkIcon className="h-7 w-7" />
+          <BookmarkIcon
+            color={tf ? "#3e9392" : "#b0bec5"}
+            className="h-7 w-7"
+          />
         </motion.div>
       </Tooltip>
     );
@@ -329,21 +331,7 @@ export default function LiveBlock() {
                   </motion.div>
                   {/* ブックマークアイコン */}
                   <div className="relative">
-                    {noteId && ic[noteId].bookmarks.includes(userId) ? (
-                      <Badge
-                        className="bg-gradient-to-tr from-green-400 to-green-600 border-2 border-white shadow-lg shadow-black/20"
-                        content={
-                          <CheckIcon
-                            className="h-4 w-4 text-white"
-                            strokeWidth={2.5}
-                          />
-                        }
-                      >
-                        <Checked tf={true} />
-                      </Badge>
-                    ) : (
-                      <Checked tf={false} />
-                    )}
+                    <Checked />
                   </div>
                   {/* フォルダーとファイルの切り替えアイコン */}
                   <Tooltip content={"フォルダーとファイルを入れ替える"}>

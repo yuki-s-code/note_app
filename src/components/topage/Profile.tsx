@@ -1,3 +1,5 @@
+//Profile.tsx
+
 import icon from "../../assets/profile_bg.png";
 import menProfileIcon from "../../assets/icons_men_user.png";
 import { memo } from "react";

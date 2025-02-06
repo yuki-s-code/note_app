@@ -4,6 +4,8 @@ import NeDB from 'nedb';
 import path from 'path';
 import moji from "moji";
 import TinySegmenter from "tiny-segmenter";
+import { format } from 'date-fns'; // date-fnsをインポート
+
 
 // インターフェース定義
 export interface NoteTree {
@@ -88,7 +90,7 @@ function initializeDB<T>(filename: string): NeDB<T> {
     autoload: true,
     timestampData: true,
     onload: (err: any) => {
-      console.log(`${filename} loaded`, err ? `Error: ${err}` : 'Success');
+      console.log(`${filename} loaded, err ? Error: ${err} : 'Success'`);
     },
   });
 }
@@ -226,6 +228,18 @@ const noteTrashDBAsync = promisifyNeDB<NoteTrash>(noteTrashDB);
 // データ取得関数
 export const getTree = async (): Promise<NoteTree[]> => {
   return await noteTreeDBAsync.find({});
+};
+
+export const getTrees = async (): Promise<NoteTree[]> => {
+  return await noteTreeDBAsync.find({ "data.type": { $ne : "journals"} });
+};
+
+export const getAllJournals = async (): Promise<NoteTree[]> => {
+  return await noteTreeDBAsync.find({ "data.type": "journals" });
+};
+
+export const getAllJournalsFolder = async (): Promise<NoteFolder[]> => {
+  return await noteFolderDBAsync.find({}, { sort: { updatedAt: -1 } });
 };
 
 export const getTreeId = async (index: string): Promise<NoteTree[]> => {
@@ -435,7 +449,7 @@ export const addCreateFolder = async (
       children: [],
       data: {
         title: "無題",
-        icon: "📓",
+        icon: "📁",
         image: '',
         type,
       },
@@ -467,6 +481,7 @@ export const addCreateFolder = async (
     return null;
   }
 };
+
 export const addCreateNote = async (
   index: string,
   parentId: string,
@@ -597,14 +612,20 @@ export const updateTreeBookMarked = async (
     if (trueToFalse) {
       const numAffected = await noteTreeDBAsync.update(
         { index },
-        { $push: { bookmarks: data }, updatedAt: new Date() },
+        { 
+          $push: { bookmarks: data },
+          $set: { updatedAt: new Date() }
+        },
         {}
       );
       return numAffected;
     } else {
       const numAffected = await noteTreeDBAsync.update(
         { index },
-        { $pull: { bookmarks: data }, updatedAt: new Date() },
+        { 
+          $pull: { bookmarks: data },
+          $set: { updatedAt: new Date() }
+        },
         {}
       );
       return numAffected;
@@ -633,7 +654,7 @@ export const updateTreeType = async (
   }
 };
 
-// ツリーソートの更新関数
+// ツリーソートの更新関数（★ 修正済み ★）
 export const updateTreeSort = async (
   target: string,
   data: string[],
@@ -647,7 +668,12 @@ export const updateTreeSort = async (
           fileTree[key].map(async (d) => {
             return noteTreeDBAsync.update(
               { index: d },
-              { $set: { roots: false, updatedAt: new Date() } },
+              {
+                $set: {
+                  roots: false,
+                  updatedAt: new Date(),
+                },
+              },
               {}
             );
           })
@@ -657,7 +683,11 @@ export const updateTreeSort = async (
         fileTree[key].map(async (childIndex) => {
           return noteTreeDBAsync.update(
             { index: key },
-            { $pull: { children: childIndex }, updatedAt: new Date() },
+            {
+              $pull: { children: childIndex },
+              // ★ ここを $set に分離することでエラー回避
+              $set: { updatedAt: new Date() },
+            },
             {}
           );
         })
@@ -672,7 +702,12 @@ export const updateTreeSort = async (
         data.map(async (d) => {
           return noteTreeDBAsync.update(
             { index: d },
-            { $set: { roots: true, updatedAt: new Date() } },
+            {
+              $set: {
+                roots: true,
+                updatedAt: new Date(),
+              },
+            },
             {}
           );
         })
@@ -680,7 +715,10 @@ export const updateTreeSort = async (
     } else {
       await noteTreeDBAsync.update(
         { index: target },
-        { $push: { children: { $each: data } }, updatedAt: new Date() },
+        {
+          $push: { children: { $each: data } },
+          $set: { updatedAt: new Date() },
+        },
         {}
       );
     }
@@ -836,6 +874,8 @@ function tokenizeForSearch(query: string) {
 function toHiragana(katakana: string) {
   return moji(katakana).convert("KK","HG").toString();
 }
+
+// フォルダ検索
 export const searchFolders = async (query: string, page: number, limit: number): Promise<{ results: SearchResult[]; hasMore: boolean }> => {
   const skip = (page - 1) * limit;
 
@@ -897,4 +937,54 @@ export const searchFolders = async (query: string, page: number, limit: number):
   );
 
   return { results: searchResults, hasMore };
+};
+
+export const getJournalsByMonth = async (startDate: Date, endDate: Date): Promise<NoteTree[]> => {
+  return await noteTreeDBAsync.find({
+    "data.type": "journals",
+    index: {
+      $gte: format(startDate, 'yyyy-MM-dd'),
+      $lt: format(endDate, 'yyyy-MM-dd'),
+    }
+  });
+};
+
+export const hasUncheckedItems = (items: any[]): boolean => {
+  for (const item of items) {
+    if (item.type === 'checkListItem' && item.props.checked === false) {
+      return true;
+    }
+    if (item.children && Array.isArray(item.children)) {
+      if (hasUncheckedItems(item.children)) {
+        return true;
+      }
+    }
+    if (item.content && Array.isArray(item.content)) {
+      if (hasUncheckedItems(item.content)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
+ * Retrieves all folders that have at least one unchecked 'checkListItem'
+ */
+export const getFoldersWithUncheckedItems = async (): Promise<NoteFolder[]> => {
+  try {
+    // titleが "YYYY-MM-DD" の形式に一致するフォルダのみを取得
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    const dateFolders = await noteFolderDBAsync.find(
+      { title: dateRegex },
+      { sort: { updatedAt: -1 } }
+    );
+    
+    // 未処理の項目を持つフォルダをフィルタリング
+    const filteredFolders = dateFolders.filter(folder => hasUncheckedItems(folder.contents));
+    return filteredFolders;
+  } catch (error) {
+    console.error("Error in getFoldersWithUncheckedItems:", error);
+    throw error;
+  }
 };

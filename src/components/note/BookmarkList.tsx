@@ -93,14 +93,14 @@ export const BookmarkList = () => {
                 onPointerEnterCapture
                 onPointerLeaveCapture
               >
-                <BookmarkIcon className=" h-4 w-4" />
+                <BookmarkIcon color="#3e9392" className=" h-4 w-4" />
               </ListItemPrefix>
-              <div>
+              <div className=" -ml-2">
                 <Typography
                   placeholder="true"
                   onPointerEnterCapture
                   onPointerLeaveCapture
-                  color="blue-gray"
+                  className=" text-sm text-blue-gray-600"
                 >
                   {list.data.title}
                 </Typography>

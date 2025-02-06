@@ -31,7 +31,6 @@ export const Mention = createReactInlineContentSpec(
       const [cardStyle, setCardStyle] = useState("inline");
       const { open }: any = useAppSelector(selectMentionBlock);
       const dispatch = useAppDispatch();
-      console.log(props.inlineContent.props.user.index);
       const onClickMention = (t: any) => {
         dispatch(
           setMentionBlock({

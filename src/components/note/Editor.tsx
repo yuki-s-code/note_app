@@ -22,8 +22,11 @@ import "@blocknote/mantine/style.css";
 import {
   BlockTypeSelectItem,
   DefaultReactSuggestionItem,
+  DragHandleButton,
   FormattingToolbar,
   FormattingToolbarController,
+  SideMenu,
+  SideMenuController,
   SuggestionMenuController,
   blockTypeSelectItems,
   getDefaultReactSlashMenuItems,
@@ -63,17 +66,17 @@ import { Link } from "react-router-dom";
 import { getData } from "./utils/getData";
 import { GitCompareIcon, PaletteIcon } from "lucide-react";
 import { FcDataSheet } from "react-icons/fc";
-import { CodeBlock, insertCode } from "@defensestation/blocknote-code";
 import {
   insertAlert,
   insertBlockQuote,
+  insertCode,
+  insertDivider,
   insertPDF,
   insertTimeItem,
   insertTodayItem,
   insertTomorrowItem,
   insertYesterDayItem,
 } from "./insert/InsertCustumItem";
-import { notJournalItem } from "./utils/notJournalItem";
 import { convertToIndexTitles } from "./utils/convertToIndexTItle";
 import { PDF } from "./PDF";
 import { motion } from "framer-motion";
@@ -82,10 +85,13 @@ import {
   DableLeftConversionExtension,
   DableRightConversionExtension,
 } from "./utils/ArrowConversionExtension";
-import { BlockQuote } from "./BlockQuote";
+import { BlockCode, BlockDivider, BlockQuote } from "./BlockQuote";
 import CharacterCount from "@tiptap/extension-character-count";
 import { DiffNoteViewr } from "./DiffNoteViewr";
 import { formatHTML } from "./utils/formatHTML";
+import { journalItem, notJournalItem } from "./utils/notJournalItem";
+import { RemoveBlockButton } from "./utils/RemoveBlockButton";
+import { DayOrNoteSwitch } from "./utils/DayOrNoteSwitch";
 
 // アイコンコンポーネントの再利用可能化
 const Icon = memo(({ id, open }: { id: number; open: number }) => (
@@ -114,20 +120,20 @@ const iconVariants = {
   tap: { scale: 0.9 },
 };
 
-const limit = 10000;
+const limit = 20000;
 
 function Editor({ initialContent, result, setCodeItem }: any) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(1);
   const [openDiff, setOpenDiff] = useState(false);
   const handleOpen = (value: any) => setOpen(open === value ? 0 : value);
+  const [isChecked, setIsChecked] = useState(false);
 
   const { noteId, mentionId }: any = useParams();
   const titleId: any = useAppSelector(selectTitleId);
   const i: any = useAppSelector(selectComplexAllFolder);
   const updatedDay: any | null = localStorage.getItem("editorContentUpdated");
   const inputDateTime: any = new Date(JSON.parse(updatedDay));
-
   const dataToString = useCallback(() => {
     // 年、月、日、時間、分、秒を取得
     const year = inputDateTime.getFullYear();
@@ -162,9 +168,13 @@ function Editor({ initialContent, result, setCodeItem }: any) {
   );
 
   const mentionLists = useMemo(
-    () => convertToIndexTitles(notJournalItem(i)),
-    [i]
+    () =>
+      isChecked
+        ? convertToIndexTitles(journalItem(i))
+        : convertToIndexTitles(notJournalItem(i)),
+    [i, isChecked]
   );
+  console.log(mentionLists);
 
   const mentionString: any | null = localStorage.getItem("mentionCount");
   const mentionObject: any = useMemo(
@@ -243,6 +253,8 @@ function Editor({ initialContent, result, setCodeItem }: any) {
       insertPDF(editor),
       //@ts-ignore
       insertCode(editor),
+      //@ts-ignore
+      insertDivider(editor),
     ],
     []
   );
@@ -274,8 +286,8 @@ function Editor({ initialContent, result, setCodeItem }: any) {
           alert: Alert,
           blockquote: BlockQuote,
           pdf: PDF,
-          //@ts-ignore
-          procode: CodeBlock,
+          procode: BlockCode,
+          prodivider: BlockDivider,
         },
         inlineContentSpecs: {
           ...defaultInlineContentSpecs,
@@ -369,9 +381,12 @@ function Editor({ initialContent, result, setCodeItem }: any) {
                 sideItem={mentionId}
               />
             </div>
-            <div className=" w-full -mt-2 flex gap-1 text-xs font-bold ml-36 text-gray-500">
-              <div className="w-12">更新日</div>
-              <div className=" w-36">{dataToString()}</div>
+            <div className=" relative w-full -mt-2 flex gap-6 text-xs font-bold text-gray-500">
+              <div className=" flex mt-1">
+                <div>更新日</div>
+                <div className=" ml-2">{dataToString()}</div>
+              </div>
+
               <div
                 className={`flex items-center text-xs gap-2 ml-2 ${
                   charCount === limit ? "character-count--warning" : ""
@@ -400,11 +415,13 @@ function Editor({ initialContent, result, setCodeItem }: any) {
                   <circle r="6" cx="10" cy="10" fill="white" />
                 </svg>
                 <div>
-                  {charCount} / {limit} 文字数
+                  {charCount} / {limit}
                 </div>
+              </div>
+              <div className=" ml-4">
                 <Tooltip content={"差分表示"}>
                   <motion.div
-                    className="ml-40 absolute cursor-pointer"
+                    className="cursor-pointer"
                     variants={iconVariants}
                     initial="initial"
                     whileTap="tap"
@@ -416,6 +433,12 @@ function Editor({ initialContent, result, setCodeItem }: any) {
                     />
                   </motion.div>
                 </Tooltip>
+              </div>
+              <div className=" ml-4">
+                <DayOrNoteSwitch
+                  isChecked={isChecked}
+                  setIsChecked={setIsChecked}
+                />
               </div>
             </div>
             <motion.div
@@ -561,7 +584,7 @@ function Editor({ initialContent, result, setCodeItem }: any) {
               className="invisible min-h-[3.2em] overflow-x-hidden whitespace-pre-wrap break-words p-3"
               aria-hidden={true}
             />
-            <textarea
+            <input
               className="absolute text-4xl font-bold top-3 w-full h-full resize-none p-3 border-none outline-none select-auto"
               value={i[noteId].data.title}
               onChange={(e) => onTitleChange(e.target.value)}
@@ -572,13 +595,13 @@ function Editor({ initialContent, result, setCodeItem }: any) {
       </div>
       <>
         {openDiff ? (
-          <div className=" -ml-96">
+          <div className=" -ml-72">
             <DiffNoteViewr />
           </div>
         ) : (
           <motion.div
             className={
-              mentionId ? `max-w-3xl h-full mt-4` : `max-w-3xl h-full mt-4`
+              mentionId ? `max-w-4xl h-full mt-4` : `max-w-4xl h-full mt-4`
             }
             initial={{ opacity: 0, y: 20, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in initial state
             animate={{ opacity: 1, y: 0, marginLeft: mentionId ? 0 : 100 }} // Include marginLeft in animate state
@@ -591,6 +614,7 @@ function Editor({ initialContent, result, setCodeItem }: any) {
               theme={"light"}
               slashMenu={false}
               formattingToolbar={false}
+              sideMenu={false}
             >
               <FormattingToolbarController
                 formattingToolbar={() => (
@@ -613,6 +637,15 @@ function Editor({ initialContent, result, setCodeItem }: any) {
                   />
                 )}
               />
+              <SideMenuController
+                sideMenu={(props) => (
+                  <SideMenu {...props}>
+                    {/* Button which removes the hovered block. */}
+                    <RemoveBlockButton {...props} />
+                    <DragHandleButton {...props} />
+                  </SideMenu>
+                )}
+              />
               <SuggestionMenuController
                 triggerCharacter={"/"}
                 // Replaces the default Slash Menu items with our custom ones.
@@ -632,8 +665,6 @@ function Editor({ initialContent, result, setCodeItem }: any) {
           </motion.div>
         )}
       </>
-
-      <div className=" mt-4 border border-b-2 opacity-10 hover:opacity-60 hover:border-b-4 cursor-pointer" />
     </>
   );
 }

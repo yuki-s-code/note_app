@@ -1,3 +1,5 @@
+//Page1.tsx
+
 import { selectEditedBoardModal } from "../../slices/boardSlice";
 import { useAppSelector } from "../../libs/app/hooks";
 import Friend from "./Friend";

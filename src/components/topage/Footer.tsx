@@ -1,3 +1,5 @@
+//Footer.tsx
+
 import { Typography } from "@material-tailwind/react";
 import { memo } from "react";
 import MainLogo from "../../assets/ashiya_logo.jpg";

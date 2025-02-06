@@ -85,7 +85,8 @@ export const BotSetting: FC<{ setEditedOpen: (open: boolean) => void }> = ({
     refetch: refetchIntents,
   } = useQueryIntents();
 
-  const { deleteBot } = useMutateBot(); // deleteBotミューテーションを取得
+  // ★ 追加: 手動トレーニング用
+  const { deleteBot, trainNLP } = useMutateBot();
 
   const bots = useMemo(() => {
     if (!botData) return [];
@@ -336,6 +337,44 @@ export const BotSetting: FC<{ setEditedOpen: (open: boolean) => void }> = ({
                 color="indigo"
               >
                 インテント管理
+              </Button>
+              {/* ★ 学習ボタン追加 */}
+              <Button
+                placeholder
+                onPointerEnterCapture
+                onPointerLeaveCapture
+                onClick={() => {
+                  // NLP学習を手動で開始
+                  trainNLP.mutate(undefined, {
+                    onSuccess: () => {
+                      toast.custom(
+                        (t) => (
+                          <SuccessToast message="NLPの学習をトリガーしました。" />
+                        ),
+                        {
+                          duration: 3000,
+                          position: "top-right",
+                        }
+                      );
+                    },
+                    onError: () => {
+                      toast.custom(
+                        (t) => (
+                          <ErrorToast message="NLPトレーニングリクエストに失敗しました。" />
+                        ),
+                        {
+                          duration: 5000,
+                          position: "top-right",
+                        }
+                      );
+                    },
+                  });
+                }}
+                className="flex items-center gap-3 ml-4"
+                size="sm"
+                color="teal"
+              >
+                NLP手動トレーニング
               </Button>
               <Button
                 placeholder

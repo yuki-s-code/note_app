@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { addDays, differenceInDays, format } from "date-fns";
 import { HiChevronRight, HiChevronLeft } from "react-icons/hi";
 import { Link } from "react-router-dom";
+import { getData } from "../utils/getData";
 
 interface DayScrollerProps {
   selectedDate: Date | null;
@@ -35,6 +36,8 @@ export const DayScroller: React.FC<DayScrollerProps> = ({
   const handleDayClick = (day: Date) => {
     setSelected(day);
     setMonth(new Date(day.getFullYear(), day.getMonth(), 1));
+    const item: any = { index: format(day, "yyyy-MM-dd"), type: "journals" };
+    getData(item);
   };
 
   useEffect(() => {
@@ -57,12 +60,12 @@ export const DayScroller: React.FC<DayScrollerProps> = ({
   );
 
   return (
-    <div className="flex items-center border-b-2 border-gray-100 w-full">
+    <div className=" relative flex items-center border-b-2 border-gray-100 w-full">
       <button className="text-xl cursor-pointer" onClick={handlePrevDay}>
         <HiChevronLeft />
       </button>
       <div
-        className="flex overflow-x-auto scrollbar-hide space-x-2 ml-2 mr-2"
+        className=" w-full relative flex gap-10 overflow-x-auto scrollbar-hide space-x-2 ml-2 mr-2"
         ref={scrollContainerRef}
       >
         {daysToDisplay.map((day) => (
@@ -71,7 +74,7 @@ export const DayScroller: React.FC<DayScrollerProps> = ({
             to={`/root/note/journals/${format(day, "yyyy-MM-dd")}`}
           >
             <div
-              className={`text-xs inline-flex flex-col items-center justify-center py-1 px-2 w-20 cursor-pointer rounded-md hover:bg-gray-200 ${
+              className={`text-xs inline-flex flex-col items-center justify-center py-1 px-2 cursor-pointer rounded-md hover:bg-gray-200 ${
                 format(day, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
                   ? "bg-blue-600 rounded-full text-white"
                   : ""

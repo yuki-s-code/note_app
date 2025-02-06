@@ -1,3 +1,5 @@
+//Friend.tsx
+
 import { memo } from "react";
 import menProfileIcon from "../../assets/icons_men_user.png";
 

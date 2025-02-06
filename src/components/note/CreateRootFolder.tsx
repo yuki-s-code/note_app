@@ -1,4 +1,4 @@
-import { FC, memo, useCallback, useState } from "react";
+import { FC, memo, useCallback } from "react";
 import {
   resetSearchName,
   setComplexFolder,
@@ -29,7 +29,7 @@ const CreateRootFolder: FC = memo(() => {
           children: [],
           data: {
             title: "無題",
-            icon: isFolder ? "📓" : "📝",
+            icon: isFolder ? "📁" : "📝",
             image: "",
             type: dataType,
           },
@@ -93,12 +93,6 @@ const CreateRootFolder: FC = memo(() => {
           }}
           className=" text-2xl cursor-pointer hover:opacity-80 ml-2 opacity-40"
         />
-        {/* <PaletteIcon
-          onClick={() => {
-            submitExcalidrawHandler();
-          }}
-          className=" text-deep-orange-600 text-2xl cursor-pointer hover:opacity-80 ml-2 opacity-40"
-        /> */}
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import { SearchNote } from "./SearchNote";
 import { useQueryTrashList } from "@/libs/hooks/noteHook/useQueryFolderBlocks";
 import { nanoid } from "nanoid";
 import { CalendarDaysIcon } from "lucide-react";
+import { getData } from "./utils/getData";
 
 const NoteTop = memo(() => {
   const dispatch = useAppDispatch();
@@ -48,6 +49,7 @@ const NoteTop = memo(() => {
         dataType: "calendar",
       })
     );
+    getData({ index: todayX, type: "journals" });
   };
 
   if (status === "loading") return <Loding />;

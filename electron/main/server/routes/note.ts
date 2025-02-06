@@ -9,12 +9,16 @@ import {
   editedDataSheetContents,
   editedFolderContents,
   getAllFolder,
+  getAllJournals,
   getAllSortFolder,
   getAllTrash,
   getDataSheet,
   getFolder,
+  getFoldersWithUncheckedItems,
+  getJournalsByMonth,
   getTree,
   getTreeId,
+  getTrees,
   newBlocks,
   searchFolders,
   selectDelete,
@@ -79,6 +83,56 @@ expressApp.get('/get_folder_tree', async (req: any, res: any) => {
   }
 });
 
+
+expressApp.get('/get_folder_trees', async (req: any, res: any) => {
+  try {
+    const docs = await getTrees();
+
+    const rootData: any = [];
+    const rootObject: any = {};
+    const complexNote = {
+      root: {
+        index: 'root',
+        canMove: true,
+        isFolder: true,
+        children: [],
+        data: { title: '無題', icon: '📝', image: '', type: '' },
+        canRename: true,
+      },
+    };
+
+    let updatedTreeItems: any;
+
+    if (docs.length) {
+      docs.forEach((t: any) => {
+        if (t.roots) {
+          rootData.push(t.index);
+        }
+        rootObject[t.index] = {
+          index: t.index,
+          canMove: t.canMove,
+          isFolder: t.isFolder,
+          children: t.children,
+          data: t.data,
+          canRename: t.canRename,
+          bookmarks: t.bookmarks,
+        };
+      });
+      updatedTreeItems = {
+        ...complexNote,
+        ...rootObject,
+        root: {
+          ...complexNote.root,
+          children: rootData,
+        },
+      };
+    }
+    res.json({ status: true, docs, updatedTreeItems, msg: '検索できました。' });
+  } catch (err: any) {
+    res.json({ status: false, msg: '検索できませんでした', error: err.message });
+  }
+});
+
 expressApp.get('/get_folder_tree_id', async (req: any, res: any) => {
   const { index } = req.query;
   try {
@@ -86,6 +140,15 @@ expressApp.get('/get_folder_tree_id', async (req: any, res: any) => {
     res.json({ status: true, docs, msg: '検索できました。' });
   } catch (err: any) {
     res.json({ status: false, msg: '検索できませんでした', error: err.message });
+  }
+});
+
+expressApp.get('/get_all_journals', async (req, res) => {
+  try {
+    const docs = await getAllJournals();
+    res.json({ status: true, docs, msg: 'journals をすべて取得しました。' });
+  } catch (err: any) {
+    res.json({ status: false, msg: '取得できませんでした', error: err.message });
   }
 });
 
@@ -403,6 +466,40 @@ expressApp.get('/search', async (req: any, res: any) => {
     res.json({ status: true, results, hasMore, msg: '検索に成功しました。' });
   } catch (err: any) {
     res.status(500).json({ status: false, msg: '検索に失敗しました。', error: err.message });
+  }
+});
+
+
+expressApp.get('/get_journals_by_month', async (req: any, res: any) => {
+  const { month } = req.query; // 例: '2025-01'
+  if (!month) {
+    return res.status(400).json({ status: false, msg: 'month クエリパラメータが必要です。' });
+  }
+
+  try {
+    const [year, monthNum] = month.split('-').map(Number);
+    if (isNaN(year) || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      return res.status(400).json({ status: false, msg: '無効な月の形式です。' });
+    }
+
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 1);
+
+    const docs = await getJournalsByMonth(startDate, endDate);
+
+    res.json({ status: true, docs, msg: '指定された月のジャーナルを取得しました。' });
+  } catch (err: any) {
+    res.json({ status: false, msg: 'データの取得に失敗しました。', error: err.message });
+  }
+});
+
+// 新しいルート: unchecked items を持つフォルダを取得
+expressApp.get('/get_unchecked_items', async (req: any, res: any) => {
+  try {
+    const folders = await getFoldersWithUncheckedItems();
+    res.json({ status: true, folders, msg: 'Unchecked items retrieved successfully.' });
+  } catch (err: any) {
+    res.json({ status: false, msg: 'Failed to retrieve unchecked items.', error: err.message });
   }
 });
 

@@ -111,6 +111,27 @@ export const useMutateBot = () => {
       },
     }
   );
+
+  // ★ 追加箇所: NLP手動トレーニングをトリガーする
+  const trainNLP = useMutation(
+    async () => {
+      // `/train_nlp` はサーバーサイド(index.ts等)で定義済みのエンドポイント
+      return axiosInstance.post(`/train_nlp`);
+    },
+    {
+      onSuccess: () => {
+        // ここでは学習完了後に再度Bot一覧などを更新したい場合invalidateQueriesします。
+        queryClient.invalidateQueries(["bot"]);
+
+        // 必要に応じてトースト表示やメッセージ表示などを追加
+        console.log("NLPのトレーニングが開始されました。");
+      },
+      onError: (error: any) => {
+        console.error("NLPトレーニングのリクエストに失敗しました:", error);
+      },
+    }
+  );
+
   return {
     addBotCategory,
     addBot,
@@ -120,5 +141,6 @@ export const useMutateBot = () => {
     addIntent,
     deleteIntent,
     updateIntent,
+    trainNLP,
   };
 };

@@ -6,25 +6,7 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import "tailwindcss/tailwind.css";
 import { DefaultSkeleton } from "./components/atoms/fetch/DefaultSkeleton";
-import { Toaster } from "react-hot-toast"; // Toaster をインポート
-
-// // コンポーネントの遅延読み込み
-// const Board = lazy(() => import("./components/board/Board"));
-// const Note = lazy(() => import("./components/note/Note"));
-// const HomePage = lazy(() => import("./components/topage/Page1"));
-// const ErrorPage = lazy(() => import("./components/ErrorPage"));
-// const Root = lazy(() => import("./routes/Root"));
-// const Login = lazy(() => import("./routes/Login"));
-// const UserCreate = lazy(() => import("./components/login/UserCreate"));
-// const MyPage = lazy(() => import("./components/topage/MyPage"));
-// const MessageIlust = lazy(() => import("./components/message/MessageIlust"));
-// const NoteApp = lazy(() => import("./components/note/NoteApp"));
-// const JournalApp = lazy(() => import("./components/note/calendar/JournalApp"));
-// const Drawer = lazy(() => import("./components/note/drawer/Drawer"));
-// const JournalDrawer = lazy(
-//   () => import("./components/note/calendar/JournalDrawer")
-// );
-
+import { Toaster } from "react-hot-toast";
 import Board from "./components/board/Board";
 import Note from "./components/note/Note";
 import HomePage from "./components/topage/Page1";

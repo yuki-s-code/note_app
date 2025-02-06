@@ -28,7 +28,6 @@ const Note = memo(() => {
   const { noteId, ymday } = useParams<{ noteId?: string; ymday?: string }>();
   const { data, status, refetch }: any = useQueryTreeFolder();
   const [showSidebar, setShowSidebar] = useState(true);
-
   const sidebarVariants = {
     open: { width: 240, transition: { type: "tween", duration: 0.5 } },
     closed: { width: 0, transition: { type: "tween", duration: 0.5 } },
@@ -43,7 +42,7 @@ const Note = memo(() => {
     if (data?.docs.length) {
       dispatch(setComplexAllFolder(data.updatedTreeItems));
     }
-  }, [data, dispatch, refetch]);
+  }, [data, dispatch, noteId, ymday]);
 
   const items = useAppSelector(selectComplexFolder);
   const { addRootCreateFolder, addRootCreateNote } = useMutateFolderBlocks();
@@ -136,7 +135,7 @@ const Note = memo(() => {
         ) : (
           <div className="mt-20 w-full -ml-20">
             <Message />
-            <div className="flex items-center justify-center gap-4 opacity-90">
+            <div className="mt-8 flex items-center justify-center gap-4 opacity-90">
               <Button
                 placeholder="true"
                 onPointerEnterCapture

@@ -1,12 +1,27 @@
 // notJournalItem.ts
 
-export const notJournalItem = (items: any) => {
-  // 除外するキー（'journals' タイプのアイテム）を特定
+interface ItemData {
+  type: string;
+  // 他のプロパティを必要に応じて追加
+}
+
+interface Item {
+  data: ItemData;
+  children?: string[];
+  // 他のプロパティを必要に応じて追加
+}
+
+interface Items {
+  [key: string]: Item;
+}
+
+const filterItems = (items: Items, typesToExclude: string[]) => {
+  // 除外するキーを特定
   const keysToExclude = new Set(
     Object.entries(items)
       .filter(
-        ([key, value]: [string, any]) =>
-          key !== "root" && value.data.type === "journals"
+        ([key, value]: [string, Item]) =>
+          key !== "root" && typesToExclude.includes(value.data.type)
       )
       .map(([key]) => key)
   );
@@ -29,4 +44,12 @@ export const notJournalItem = (items: any) => {
   });
 
   return filteredItems;
+};
+
+export const notJournalItem = (items: any) => {
+  return filterItems(items, ["journals"]);
+};
+
+export const journalItem = (items: any) => {
+  return filterItems(items, ["note", "folder"]);
 };

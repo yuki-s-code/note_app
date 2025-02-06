@@ -99,7 +99,6 @@ export const BotEdit = ({ botData, onClose }: any) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const categoryIds = formData.category.map((cat: Category) => cat.id);
-
     // Bot の更新処理
     updateQABot.mutate(
       {

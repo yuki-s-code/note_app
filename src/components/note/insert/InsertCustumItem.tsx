@@ -14,6 +14,7 @@ import {
   insertOrUpdateBlock,
 } from "@blocknote/core";
 import { RiAlertFill, RiDoubleQuotesL, RiFilePdfFill } from "react-icons/ri";
+import { CodeIcon, DivideIcon } from "lucide-react";
 
 export const insertTodayItem = (editor: BlockNoteEditor) => ({
   title: "今日",
@@ -134,16 +135,28 @@ export const insertBlockQuote = (editor: any) => ({
   subtext: "引用した文を挿入",
 });
 
-// export const insertSeparator = (editor: BlockNoteEditor) => ({
-//   title: "Separator",
-//   group: "Other",
-//   onItemClick: () => {
-//     insertOrUpdateBlock(editor, {
-//       //@ts-expect-error types not defined
-//       type: "separator",
-//     });
-//   },
-//   aliases: ["hr", "separator", "sep", "rule"],
-//   icon: <RulerIcon />,
-//   subtext: "Insert a separator block.",
-// });
+export const insertCode = (editor: any) => ({
+  title: "コード",
+  onItemClick: () => {
+    insertOrUpdateBlock(editor, {
+      type: "procode",
+    });
+  },
+  aliases: ["procode"],
+  group: "Other",
+  icon: <CodeIcon className=" w-4 h-4" />,
+  subtext: "Codeを挿入",
+});
+
+export const insertDivider = (editor: any) => ({
+  title: "区切り",
+  onItemClick: () => {
+    insertOrUpdateBlock(editor, {
+      type: "prodivider",
+    });
+  },
+  aliases: ["prodivider"],
+  group: "Other",
+  icon: <DivideIcon className=" w-4 h-4" />,
+  subtext: "区切りを挿入",
+});

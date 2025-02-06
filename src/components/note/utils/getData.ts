@@ -19,7 +19,6 @@ export function extractMentionedUsers(data: any): Mention[] {
       content.forEach(extractRecursively);
     } else if (content && typeof content === 'object') {
       if (content.type === 'mention') {
-        console.log(content.props)
         uniqueUsers.add(JSON.stringify(content.props.user));
       } else if (content.type === 'tableContent') {
         content.rows.forEach((row: any) => row.cells.forEach(extractRecursively));
@@ -63,15 +62,14 @@ export async function getData(item: any) {
   localStorage.removeItem("editorPageLinks")
   localStorage.removeItem("dataSheetContent");
   const data = await fetchData(item.index || item.data.index, item.type || item.data.type);
-
   // データの存在チェックとデフォルト値の設定
-  const docs = data.docs || [];  
+  const docs = data.docs || [];
   const firstDoc = docs[0];
 
   if (item.type === "sheet" || item.data?.type === "sheet") {
     localStorage.setItem("dataSheetContent", JSON.stringify(firstDoc.contents));
   } else {
-      if (isEmpty(firstDoc.contents)) {
+      if (!firstDoc || isEmpty(firstDoc.contents)) {
         localStorage.setItem("editorContent", JSON.stringify(""));
         localStorage.setItem("mentionCount", JSON.stringify([]));
       } else {

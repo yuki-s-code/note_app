@@ -24,6 +24,8 @@ interface SearchFuseNoteProps {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
 export const SearchFuseNote: React.FC<SearchFuseNoteProps> = ({
   searchText,
   setOpen,
@@ -41,10 +43,11 @@ export const SearchFuseNote: React.FC<SearchFuseNoteProps> = ({
     isFetchingNextPage,
   } = useSearchFolders(debouncedSearchText, limit);
   // フラットな結果配列
+
   const results: SearchResult[] = data
     ? data.pages.flatMap((page) => page.results)
     : [];
-
+  console.log(results);
   // ローディングとエラーステート
   const isInitialLoading = isFetching && !isFetchingNextPage && !data;
   const isError = error;

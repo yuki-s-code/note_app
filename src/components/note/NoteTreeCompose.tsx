@@ -22,7 +22,7 @@ import {
   setTreeIdGet,
 } from "@/slices/noteSlice";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
-import { FcFolder, FcDataSheet } from "react-icons/fc";
+import { FcDataSheet } from "react-icons/fc";
 import { Link } from "react-router-dom";
 import {
   Menu,
@@ -35,7 +35,6 @@ import uid from "@/libs/utils/uid";
 import { BsTrash } from "react-icons/bs";
 import { truncateText } from "./utils/truncateText";
 import { getData } from "./utils/getData";
-import { PaletteIcon } from "lucide-react";
 import { notJournalItem } from "./utils/notJournalItem";
 
 export const NoteTreeCompose = memo(() => {
@@ -96,7 +95,7 @@ export const NoteTreeCompose = memo(() => {
           children: [],
           data: {
             title: "無題",
-            icon: isFolder ? "📓" : "📝",
+            icon: isFolder ? "📁" : "📝",
             image: "",
             type: dataType,
           },
@@ -175,11 +174,7 @@ export const NoteTreeCompose = memo(() => {
   );
 
   const onDropItem = useCallback(
-    async (
-      items: any[],
-      target: DraggingPositionItem
-      // fileTree: RevezoneFileTree
-    ) => {
+    async (items: any[], target: DraggingPositionItem) => {
       const itemIds: string[] = items
         .map((item) => item.index)
         .filter((id) => !!id);
@@ -219,6 +214,7 @@ export const NoteTreeCompose = memo(() => {
         <div className="menu-list border-slate-100 px-1 pt-2">
           <ControlledTreeEnvironment
             items={notJournalItem(ic)}
+            // items={ic}
             getItemTitle={(item) => item.data.title}
             canDragAndDrop={true}
             canDropOnFolder={true}
@@ -297,29 +293,33 @@ export const NoteTreeCompose = memo(() => {
                       <div>
                         <div
                           className={`flex justify-between items-center flex-1 menu-tree-item-child w-11/12 ${item.index}`}
-                          // onDoubleClick={(e) => {
-                          //   onDoubleClick(e, context);
-                          // }}
                         >
                           <div className=" flex w-40">
                             <div className="flex items-center">
-                              {item.data.type == "folder" ? (
-                                <FcFolder className="w-4 h-4" />
-                              ) : item.data.type == "note" ? (
-                                <div className=" -mt-2 w-4 h-4">
+                              {item.data.type === "folder" ? (
+                                // context.isExpanded ? (
+                                //   <FcOpenedFolder className="w-4 h-4" />
+                                // ) : (
+                                //   <FcFolder className="w-4 h-4" />
+                                // )
+                                <div className=" -mt-1 w-4 h-4">
                                   {item.data.icon}
                                 </div>
-                              ) : item.data.type == "excalidraw" ? (
-                                <PaletteIcon className="w-4 h-4" />
+                              ) : item.data.type === "note" ? (
+                                <div className=" -mt-1 w-4 h-4">
+                                  {item.data.icon}
+                                </div>
                               ) : (
                                 <FcDataSheet className=" w-4 h-4" />
                               )}
                             </div>
                             <Link to={`/root/note/${index}`}>
                               <div
-                                className="ml-2 truncate pr-2 text-sm text-blue-gray-500"
+                                className="ml-1 truncate pr-2 text-sm text-blue-gray-500"
                                 onClick={() => {
-                                  onClickCreateFolderModal(item), getData(item);
+                                  onClickCreateFolderModal(item),
+                                    getData(item),
+                                    console.log(item);
                                 }}
                                 onDragEnter={() => {
                                   onClickCreateFolderModal(item), getData(item);
@@ -391,17 +391,7 @@ export const NoteTreeCompose = memo(() => {
                                       >
                                         データシートを作成
                                       </MenuItem>
-                                      {/* <MenuItem
-                                        placeholder="true"
-                                        onPointerEnterCapture
-                                        onPointerLeaveCapture
-                                        onClick={() => {
-                                          onClickNoteCreate(item, "excalidraw"),
-                                            setItemIndex(item.index);
-                                        }}
-                                      >
-                                        図を作成
-                                      </MenuItem> */}
+
                                       <hr className="my-3" />
                                       <MenuItem
                                         placeholder="true"

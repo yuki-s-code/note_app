@@ -19,11 +19,10 @@ interface Document {
 export const convertToIndexTitles = (
     documentData: Document
   ): { index: string; title: string,icon: any, image: any, type: any }[] => {
-    const result: { index: string; title: string; icon: any; image: any; type: any }[] =
-      [];
-
+    const result: { index: string; title: string; icon: any; image: any; type: any }[] = [];
     for (const [index, data] of Object.entries(documentData)) {
-      if (!data.isFolder) {
+      // if (!data.isFolder) {
+        if (index !== "root") {
         result.push({
           index,
           title: data.data.title,

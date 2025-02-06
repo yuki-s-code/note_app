@@ -1,26 +1,105 @@
-//routes/services/bots.ts
-
+// =====================================
+// routes/services/bots.ts
+// =====================================
 import express from 'express';
-import { addBotCreate, addIntent, deleteBot, deleteIntent, getAllBot, getAllBotCategory, getAllIntents, getBotAllMessages, getIntentsByCategory, insertBotCategory, updateCategoryBot, updateIntent, updateQABot } from '../database/bot/bot';
+import { 
+  addBotCreate,
+  addIntent,
+  deleteBot,
+  deleteIntent,
+  getAllBot,
+  getAllBotCategory,
+  getAllIntents,
+  getBotAllMessages,
+  getIntentsByCategory,
+  insertBotCategory,
+  updateCategoryBot,
+  updateIntent,
+  updateQABot,
+} from '../database/bot/bot';
+
 const { NlpManager } = require('node-nlp');
 import PQueue from 'p-queue';
 
 const expressApp = express.Router();
 
+// --------------------------------------
+// NLP Manager & Training Queue
+// --------------------------------------
+const queue = new PQueue({ concurrency: 2 });
 
-  //bot--------------------------------------------
+const manager = new NlpManager({
+  languages: ['ja'],
+  nlu: { useNoneIntent: true },
+  tokenizer: {
+    ja: { useBest: true, decomposeCompound: true },
+  },
+  forceNER: true,
+});
 
-// すべてのボットを取得
-expressApp.get('/get_all_bot', async (req: any, res: any) => {
+/**
+ * NLPのトレーニングと保存を行う関数をキューに追加
+ */
+const addToTrainingQueue = async () => {
+  if (!queue.isPaused) {
+    // queue が pause されていない場合のみ追加
+    await queue.add(async () => {
+      await manager.train();
+      await manager.save();
+      console.log('NLP Manager がトレーニング＆保存されました。');
+    });
+  }
+};
+
+/**
+ * サーバー起動時にNLPモデルを初期化＆トレーニング
+ */
+const initializeNLP = async () => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    // 事前にDBから Intent と Bot データをすべて取得
+    const intents = await getAllIntents();
+    const bots = await getBotAllMessages();
+
+    // NLP Manager に Document と Answer をセット
+    for (const intent of intents) {
+      // そのインテントに紐づく Bot (QA) を集める
+      const relatedBots = bots.filter((bot) => bot.intentId === intent.id);
+      for (const bot of relatedBots) {
+        // 質問(ユーザ発話)を学習に追加
+        bot.questions.forEach((question) => {
+          console.log(question,intent.name)
+          manager.addDocument('ja', question, intent.name);
+        });
+        // 回答(ボット発話)を学習に追加
+        manager.addAnswer('ja', intent.name, bot.answer);
+      }
+    }
+    // モデルをトレーニングして保存
+    await manager.train();
+    await manager.save();
+    console.log('NLP Manager が初期トレーニングされました。');
+  } catch (error) {
+    console.error('NLP Manager の初期化に失敗:', error);
+  }
+};
+initializeNLP();
+
+// --------------------------------------
+// Bot関連API
+// --------------------------------------
+
+// すべてのBotを取得（ページネーション対応）
+expressApp.get('/get_all_bot', async (req, res) => {
+  try {
+    const { page = 1, limit = 20 }: any = req.query;
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
 
-    // ページ番号とリミットの検証
     if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
-      res.status(400).json({ status: false, msg: '無効なページ番号またはリミットです。' });
-      return;
+      return res.status(400).json({ 
+        status: false,
+        msg: '無効なページ番号またはリミットです。' 
+      });
     }
 
     const data = await getAllBot(pageNum, limitNum);
@@ -31,7 +110,7 @@ expressApp.get('/get_all_bot', async (req: any, res: any) => {
 });
 
 // すべてのボットカテゴリーを取得
-expressApp.get('/get_all_bot_category', async (req: any, res: any) => {
+expressApp.get('/get_all_bot_category', async (req, res) => {
   try {
     const docs = await getAllBotCategory();
     res.json({ status: true, docs, msg: '検索できました' });
@@ -40,62 +119,11 @@ expressApp.get('/get_all_bot_category', async (req: any, res: any) => {
   }
 });
 
-// トレーニングキューの初期化
-const queue = new PQueue({ concurrency: 1 });
-// NLP Managerの初期化
-const manager = new NlpManager({
-  languages: ['ja'],
-  nlu: { useNoneIntent: true },
-  tokenizer: {
-    ja: {
-      useBest: true,
-      decomposeCompound: true,
-    },
-  },forceNER: true });
-
-  // トレーニング関数をキューに追加
-const addToTrainingQueue = async () => {
-  await queue.add(async () => {
-    await manager.train();
-    await manager.save();
-    console.log('NLP Manager がトレーニングされました。');
-  });
-};
-
-// サーバー起動時にNLPモデルをトレーニング
-const initializeNLP = async () => {
-  try {
-    // インテントと回答をデータベースから取得
-    const intents = await getAllIntents();
-    const bots = await getBotAllMessages();
-    // インテントと回答をNLP Managerに追加
-    intents.forEach(intent => {
-      // インテントに関連するBotを取得
-      const relatedBots = bots.filter(bot => bot.intentId === intent.id);
-      console.log("943:relatedBots",relatedBots)
-      relatedBots.forEach(bot => {
-        bot.questions.forEach(question => {
-          manager.addDocument('ja', question, intent.name);
-        });
-        manager.addAnswer('ja', intent.name, bot.answer);
-      });
-    });
-
-    // モデルをトレーニング
-    await manager.train();
-    manager.save();
-    console.log('NLP Manager がトレーニングされました。');
-  } catch (error) {
-    console.error('NLP Manager の初期化に失敗しました:', error);
-  }
-};
-
-// サーバー起動時にNLPを初期化
-initializeNLP();
-
-
-// 新しいボットを追加
-expressApp.post('/add_bot_create', async (req: any, res: any) => {
+/**
+ * 新しいボットを追加
+ * DBに登録しつつ、NLPにもドキュメント・回答を追加
+ */
+expressApp.post('/add_bot_create', async (req, res) => {
   try {
     const {
       id,
@@ -116,12 +144,14 @@ expressApp.post('/add_bot_create', async (req: any, res: any) => {
       relatedFAQs: relatedFAQs || [],
     };
     const newBot = await addBotCreate(botData);
-    // 新しいデータをNLP Managerに追加
+
+    // NLP Managerにも新規追加
     questions.forEach((question: string) => {
       manager.addDocument('ja', question, intentId);
     });
     manager.addAnswer('ja', intentId, answer);
-    // モデルを再トレーニング
+
+    // 再トレーニング
     await addToTrainingQueue();
 
     res.json({ status: true, docs: newBot, msg: 'ボットが作成されました。' });
@@ -130,8 +160,13 @@ expressApp.post('/add_bot_create', async (req: any, res: any) => {
   }
 });
 
-// ボットを更新
-expressApp.post('/update_qa_bot', async (req: any, res: any) => {
+/**
+ * ボットを更新
+ * 一旦インテントを削除後、再追加する設計の場合、同じインテントIDを
+ * 共有している他のBotがあるとそのデータも削除されるリスクがある。
+ * ここでは意図的に「Botごとに固有のIntentを持つ」想定で進める。
+ */
+expressApp.post('/update_qa_bot', async (req, res) => {
   try {
     const {
       id,
@@ -142,6 +177,7 @@ expressApp.post('/update_qa_bot', async (req: any, res: any) => {
       keywords,
       relatedFAQs,
     } = req.body;
+
     const updateData = {
       category,
       intentId,
@@ -150,15 +186,19 @@ expressApp.post('/update_qa_bot', async (req: any, res: any) => {
       keywords,
       relatedFAQs,
     };
+
+    // DB更新
     const numAffected = await updateQABot(id, updateData);
-    // 既存のインテントと回答を削除
+
+    // まず既存のインテントを削除
     manager.removeIntent(intentId);
-    // 新しいデータを追加
+    // 新しい質問と回答を追加
     questions.forEach((question: string) => {
       manager.addDocument('ja', question, intentId);
     });
     manager.addAnswer('ja', intentId, answer);
-    // モデルを再トレーニング
+
+    // 学習キューに追加
     await addToTrainingQueue();
 
     res.json({ status: true, numAffected, msg: 'ボットが更新されました。' });
@@ -167,30 +207,80 @@ expressApp.post('/update_qa_bot', async (req: any, res: any) => {
   }
 });
 
-// 手動でトレーニングをトリガーするエンドポイント
-expressApp.post('/train_nlp', async (req: any, res: any) => {
+/**
+ * Bot削除
+ * - Bot情報を最初に findOne で取得し、削除実行後に
+ *   NLP からもインテントを削除するように修正
+ */
+expressApp.delete('/delete_bot/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // ---- 1) Bot情報を先に取得する ----
+    // 下記のような「getBotById」相当のメソッドを新設し、
+    // Bot情報を取り出す方法をおすすめします。
+    // 例）
+    //   const bot: Bot | null = await getBotById(id);
+    //   if (!bot) { ... }
+
+    // あるいは findOne を直接呼び出す形でもOKです。
+    // ここでは例として、deleteBotの前に
+    // "botDBAsync.findOne({ id })" などを利用する想定で記述します。
+
+    // ここでは便宜上、getBotAllMessages() で全件取得して
+    // その中から探す例を記述。
+    // 実装環境に合わせて最適化してください。
+    const allBots = await getBotAllMessages();
+    const bot = allBots.find((b) => b.id === id);
+
+    if (!bot) {
+      return res.status(404).json({ status: false, message: 'Botが見つかりませんでした。' });
+    }
+
+    // ---- 2) Bot削除 ----
+    const numRemoved = await deleteBot(id);
+    if (numRemoved <= 0) {
+      return res.status(404).json({ status: false, message: 'Botの削除に失敗しました。' });
+    }
+
+    // ---- 3) NLP Managerから該当インテントを削除 ----
+    // Botごとに固有の Intent であれば削除してOK
+    manager.removeIntent(bot.intentId);
+
+    // ---- 4) モデル再学習・保存 ----
+    await manager.train();
+    await manager.save();
+
+    res.status(200).json({ status: true, message: 'Botが削除されました。' });
+  } catch (error) {
+    console.error('Botの削除に失敗:', error);
+    res.status(500).json({ status: false, message: 'Botの削除に失敗しました。' });
+  }
+});
+
+// --------------------------------------
+// トレーニング手動トリガー
+// --------------------------------------
+expressApp.post('/train_nlp', async (req, res) => {
   try {
     await addToTrainingQueue();
     res.json({ status: true, msg: 'NLP Manager のトレーニングを開始しました。' });
   } catch (err: any) {
-    console.error('NLP Manager のトレーニングに失敗しました:', err);
-    res.status(500).json({ status: false, msg: 'NLP Manager のトレーニングに失敗しました。', error: err.message });
+    console.error('NLP Manager のトレーニングに失敗:', err);
+    res.status(500).json({ 
+      status: false,
+      msg: 'NLP Manager のトレーニングに失敗しました。',
+      error: err.message 
+    });
   }
 });
 
-// 新しいカテゴリーを追加
-expressApp.post('/insert_bot_category', async (req: any, res: any) => {
+// --------------------------------------
+// カテゴリ関連API
+// --------------------------------------
+expressApp.post('/insert_bot_category', async (req, res) => {
   try {
-    const {
-      id,
-      category,
-      color,
-    } = req.body;
-    const categoryData = {
-      id,
-      category,
-      color,
-    };
+    const { id, category, color } = req.body;
+    const categoryData = { id, category, color };
     const newCategory = await insertBotCategory(categoryData);
     res.json({ status: true, docs: newCategory, msg: 'カテゴリーが作成されました。' });
   } catch (err: any) {
@@ -198,18 +288,10 @@ expressApp.post('/insert_bot_category', async (req: any, res: any) => {
   }
 });
 
-// カテゴリーを更新
-expressApp.post('/update_bot_category', async (req: any, res: any) => {
+expressApp.post('/update_bot_category', async (req, res) => {
   try {
-    const {
-      id,
-      category,
-      color,
-    } = req.body;
-    const updateData = {
-      category,
-      color,
-    };
+    const { id, category, color } = req.body;
+    const updateData = { category, color };
     const numAffected = await updateCategoryBot(id, updateData);
     res.json({ status: true, numAffected, msg: 'カテゴリーが更新されました。' });
   } catch (err: any) {
@@ -217,8 +299,10 @@ expressApp.post('/update_bot_category', async (req: any, res: any) => {
   }
 });
 
-// すべてのインテントを取得
-expressApp.get('/get_all_intents', async (req: any, res: any) => {
+// --------------------------------------
+// インテント関連API
+// --------------------------------------
+expressApp.get('/get_all_intents', async (req, res) => {
   try {
     const intents = await getAllIntents();
     res.json({ status: true, intents, msg: 'インテントを取得しました。' });
@@ -227,10 +311,10 @@ expressApp.get('/get_all_intents', async (req: any, res: any) => {
   }
 });
 
-// カテゴリーIDに基づいてインテントを取得
-expressApp.get('/get_intents_by_category', async (req: any, res: any) => {
+expressApp.get('/get_intents_by_category', async (req, res) => {
   try {
-    const { categoryId } = req.params;
+    const { categoryId }: any = req.query; 
+    // ↑ req.params ではなく query から取る実装に合わせる場合は要修正
     const intents = await getIntentsByCategory(categoryId);
     res.json({ status: true, intents, msg: 'インテントを取得しました。' });
   } catch (err: any) {
@@ -238,18 +322,10 @@ expressApp.get('/get_intents_by_category', async (req: any, res: any) => {
   }
 });
 
-// 新しいインテントを追加
-expressApp.post('/add_intent', async (req: any, res: any) => {
+expressApp.post('/add_intent', async (req, res) => {
   try {
     const { id, name, categoryId, description } = req.body;
-
-    const intentData = {
-      id,
-      name,
-      categoryId,
-      description,
-    };
-
+    const intentData = { id, name, categoryId, description };
     const newIntent = await addIntent(intentData);
     res.json({ status: true, intent: newIntent, msg: 'インテントが作成されました。' });
   } catch (err: any) {
@@ -257,8 +333,7 @@ expressApp.post('/add_intent', async (req: any, res: any) => {
   }
 });
 
-// インテントを削除
-expressApp.delete('/delete_intent/:id', async (req: any, res: any) => {
+expressApp.delete('/delete_intent/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const numRemoved = await deleteIntent(id);
@@ -271,17 +346,11 @@ expressApp.delete('/delete_intent/:id', async (req: any, res: any) => {
     res.json({ status: false, msg: 'インテントの削除に失敗しました。', error: err.message });
   }
 });
-// インテントを更新
-expressApp.post('/update_intent', async (req: any, res: any) => {
+
+expressApp.post('/update_intent', async (req, res) => {
   try {
     const { id, name, categoryId, description } = req.body;
-
-    const updateData = {
-      name,
-      categoryId,
-      description,
-    };
-
+    const updateData = { name, categoryId, description };
     const numAffected = await updateIntent(id, updateData);
     res.json({ status: true, numAffected, msg: 'インテントが更新されました。' });
   } catch (err: any) {
@@ -289,68 +358,45 @@ expressApp.post('/update_intent', async (req: any, res: any) => {
   }
 });
 
-// ボットを削除
-expressApp.delete('/delete_bot/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    // ボット情報を取得
-    const bot: any = await deleteBot(id);
-    if (!bot) {
-      res.status(404).json({ status: false, message: 'Botが見つかりませんでした。' });
-      return;
-    }
-
-    // ボットをデータベースから削除
-    const numRemoved = await deleteBot(id);
-
-    if (numRemoved > 0) {
-      // NLP Managerからインテントを削除
-      manager.removeIntent(bot.intentId);
-
-      // モデルを再トレーニング
-      await manager.train();
-      manager.save();
-
-      res.status(200).json({ status: true, message: 'Botが削除されました。' });
-    } else {
-      res.status(404).json({ status: false, message: 'Botが見つかりませんでした。' });
-    }
-  } catch (error) {
-    console.error('Botの削除に失敗しました:', error);
-    res.status(500).json({ status: false, message: 'Botの削除に失敗しました。' });
-  }
-});
-
-// /get_bot_message エンドポイントの追加
+// --------------------------------------
+// ユーザーメッセージ（チャット）API
+// --------------------------------------
 expressApp.get('/api/get_bot_message', async (req, res) => {
   const userMessage = req.query.userMessage as string;
-  console.log(userMessage)
   if (!userMessage) {
-    return res.status(400).json({ status: false, msg: 'ユーザーメッセージが提供されていません。' });
+    return res.status(400).json({
+      status: false,
+      msg: 'ユーザーメッセージが提供されていません。'
+    });
   }
 
   try {
-
-    // ユーザーメッセージを正規化
+    // 前処理（形態素解析や正規化など）を強化したい場合はここで実装
     const normalizedMessage = userMessage.trim();
+
+    // NLP に投げる
     const response = await manager.process('ja', normalizedMessage);
-     // デバッグ情報をログに出力
+
+    // デバッグ用ログ
     console.log('NLP Response:', response);
-    // 複数のフォールバック回答候補を定義
+
+    // 複数のフォールバック回答候補
     const fallbackResponses = [
       '申し訳ありませんが、よく理解できませんでした。もう少し詳しく教えていただけますか？',
       'すみません、その質問にはお答えできません。別の質問を試してみてください。',
       'ちょっと分かりませんでした。別の言い方で教えていただけますか？',
       'お手数ですが、もう一度質問していただけますか？',
-      'その件についてはよく分かりません。別の質問をお願いします。'
+      'その件についてはよく分かりません。別の質問をお願いします。',
     ];
 
-    let botAnswer: string;
+    let botAnswer = '';
+    // ★ 少しスコア閾値を上げるなど調整
+    const threshold = 0.60;
 
-    if (response.intent && response.score > 0.50) { // 信頼度の閾値を設定
+    if (response.intent && response.score > threshold) {
       botAnswer = response.answer || '申し訳ありませんが、その質問にはお答えできません。';
     } else {
-      // フォールバック回答からランダムに選択
+      // フォールバック回答をランダムに選択
       const randomIndex = Math.floor(Math.random() * fallbackResponses.length);
       botAnswer = fallbackResponses[randomIndex];
     }
@@ -362,7 +408,7 @@ expressApp.get('/api/get_bot_message', async (req, res) => {
       score: response.score,
     });
   } catch (error) {
-    console.error('Botメッセージの取得に失敗しました:', error);
+    console.error('Botメッセージの取得に失敗:', error);
     res.status(500).json({ status: false, msg: 'Botメッセージの取得に失敗しました。' });
   }
 });

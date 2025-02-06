@@ -27,6 +27,7 @@ import toast from "react-hot-toast"; // react-hot-toast をインポート
 import SuccessToast from "@/components/atoms/toast/SuccessToast";
 import ErrorToast from "@/components/atoms/toast/ErrorToast";
 import { CODESTATEITEM } from "@/libs/types/note";
+import { format } from "date-fns";
 
 export const JournalEditor = memo(({ openRight }: any) => {
   const dispatch = useAppDispatch();
@@ -39,13 +40,19 @@ export const JournalEditor = memo(({ openRight }: any) => {
   const pageLink: any | null = localStorage.getItem("editorPageLinks");
   const pageLinkObject = pageLink == null ? [] : JSON.parse(pageLink);
 
+  const result = useMemo(() => {
+    return Array.from(pageLinkObject)
+      .filter((key: any) => ic.hasOwnProperty(key))
+      .map((key: any) => ic[key]);
+  }, [pageLinkObject, ic]);
+
   const { addJournalsDataMutation }: any = useMutateFolderBlocks();
 
   useEffect(() => {
     refetch();
-    const editorStr: any =
-      data && data.docs.length ? data?.docs[0].contents : "";
-    localStorage.setItem("editorContent", JSON.stringify(editorStr));
+    // const editorStr: any =
+    //   data && data.docs.length ? data?.docs[0].contents : "";
+    // localStorage.setItem("editorContent", JSON.stringify(editorStr));
     dispatch(
       setLiveBlock({
         open: false,
@@ -158,13 +165,6 @@ export const JournalEditor = memo(({ openRight }: any) => {
     [dispatch, addJournalsDataMutation, items, previousMention, ymday, pageLink]
   );
 
-  const result: Record<string, any> = [];
-  for (const key of pageLinkObject) {
-    if (ic.hasOwnProperty(key)) {
-      result.push(ic[key]);
-    }
-  }
-
   const onClickSave = () => {
     submitItemHandler(false, "journals");
   };
@@ -187,9 +187,11 @@ export const JournalEditor = memo(({ openRight }: any) => {
         exit={{ opacity: 0, y: -20, marginLeft: mentionId ? 0 : 144 }} // Include marginLeft in exit state
         transition={{ duration: 0.5 }} // Animation duration
       >
-        <div className="mt-12 text-4xl text-blue-gray-400 select-none ">
-          {ymday}
+        <div className=" mt-16 flex text-blue-gray-400 select-none">
+          <div className="text-5xl ">{ymday}</div>
+          <div className=" ml-4 text-xl mt-5">{format(ymday, "EEE")}</div>
         </div>
+
         <div
           className={
             openRight || mentionId
@@ -199,6 +201,7 @@ export const JournalEditor = memo(({ openRight }: any) => {
         >
           <JEditor
             initialContent={data?.docs.length ? data?.docs[0].contents : ""}
+            result={result}
             setCodeItem={setCodeItem}
           />
         </div>

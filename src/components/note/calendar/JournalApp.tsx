@@ -1,5 +1,3 @@
-// JournalApp.tsx
-
 import React, { memo, useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -7,14 +5,14 @@ import CalendarApp from "./CalendarApp";
 import { DayScroller } from "./DayScroller";
 import { JournalEditor } from "./JournalEditor";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
-import { CalendarDaysIcon } from "lucide-react";
+import { PanelRightOpen } from "lucide-react";
 
 const MIN_CALENDAR_WIDTH = 200;
 
 export const JournalApp = memo(() => {
   const { mentionId }: any = useParams();
   const navigate = useNavigate();
-  const [selected, setSelected]: any = useState<Date | null>(new Date());
+  const [selected, setSelected] = useState<Date | null>(new Date());
   const [openRight, setOpenRight] = useState(false);
   const [calendarWidth, setCalendarWidth] = useState(300); // 初期幅
   const [isResizing, setIsResizing] = useState(false);
@@ -75,7 +73,6 @@ export const JournalApp = memo(() => {
         {/* メインコンテンツエリア */}
         <div className="flex flex-col flex-1">
           {/* ヘッダー */}
-
           <header className="w-full fixed top-0 z-20 bg-white h-20 flex items-center px-4">
             {/* 左側: DayScroller */}
             <div className="flex items-center space-x-4">
@@ -85,19 +82,20 @@ export const JournalApp = memo(() => {
                 setMonth={setMonth}
                 handleTodayClick={handleTodayClick}
               />
-              {/* Breadcrumbs can be added here if needed */}
             </div>
 
             {/* 右側: サイドバーのトグルボタン */}
-            <div className="flex items-center h-screen">
-              <button
-                onClick={toggleSidebar}
-                className="p-2 text-blue-500 hover:text-blue-700"
-                aria-label="Toggle Calendar Sidebar"
-              >
-                <CalendarDaysIcon size={24} />
-              </button>
-            </div>
+            {!openRight && (
+              <div className="flex items-center h-screen">
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 text-gray-400 hover:text-blue-500"
+                  aria-label="Toggle Calendar Sidebar"
+                >
+                  <PanelRightOpen size={24} />
+                </button>
+              </div>
+            )}
           </header>
 
           {/* スクロール可能なメインエリア */}
@@ -116,7 +114,7 @@ export const JournalApp = memo(() => {
             <div className="flex h-full">
               {/* リサイズハンドル */}
               <div
-                className=" w-[2px] bg-gray-300 cursor-ew-resize hover:bg-gray-500 h-full"
+                className=" w-[2px] bg-gray-300 cursor-ew-resize hover:bg-blue-500 hover:w-[6px] h-full"
                 onMouseDown={handleMouseDown}
                 onDoubleClick={() => setOpenRight(false)}
                 role="separator"

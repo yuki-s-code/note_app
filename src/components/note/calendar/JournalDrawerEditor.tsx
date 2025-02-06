@@ -15,8 +15,11 @@ import "@blocknote/react/style.css";
 import {
   BlockTypeSelectItem,
   DefaultReactSuggestionItem,
+  DragHandleButton,
   FormattingToolbar,
   FormattingToolbarController,
+  SideMenu,
+  SideMenuController,
   SuggestionMenuController,
   blockTypeSelectItems,
   getDefaultReactSlashMenuItems,
@@ -34,26 +37,28 @@ import EmojiPicker from "@/components/modals/note/EmojiPicker";
 import {
   insertAlert,
   insertBlockQuote,
+  insertCode,
+  insertDivider,
   insertPDF,
   insertTimeItem,
   insertTodayItem,
   insertTomorrowItem,
   insertYesterDayItem,
 } from "../insert/InsertCustumItem";
-import { notJournalItem } from "../utils/notJournalItem";
 import { convertToIndexTitles } from "../utils/convertToIndexTItle";
 import { extractMentionedUsers } from "../utils/getData";
 import { useParams } from "react-router-dom";
 import { JournalMention } from "./JournalMention";
 import { PDF } from "../PDF";
-import { CodeBlock, insertCode } from "@defensestation/blocknote-code";
 import {
   ArrowConversionExtension,
   DableLeftConversionExtension,
   DableRightConversionExtension,
 } from "../utils/ArrowConversionExtension";
-import { BlockQuote } from "../BlockQuote";
+import { BlockCode, BlockDivider, BlockQuote } from "../BlockQuote";
 import { RiAlertFill, RiDoubleQuotesL } from "react-icons/ri";
+import { RemoveBlockButton } from "../utils/RemoveBlockButton";
+import { notJournalItem } from "../utils/notJournalItem";
 
 export const JournalDrawerEditor = ({ initialContent }: any) => {
   const dispatch = useAppDispatch();
@@ -80,6 +85,7 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
   }, [initialContent]);
 
   const mentionLists: any = convertToIndexTitles(notJournalItem(i));
+  // const mentionLists: any = convertToIndexTitles(i);
 
   const onTitleChange = useCallback(
     (t: any) => {
@@ -190,8 +196,8 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
       blockquote: BlockQuote,
       //@ts-ignore
       pdf: PDF,
-      //@ts-ignore
-      procode: CodeBlock,
+      procode: BlockCode,
+      prodivider: BlockDivider,
     },
     inlineContentSpecs: {
       // Adds all default inline content.
@@ -222,6 +228,8 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
       insertPDF(editor),
       //@ts-ignore
       insertCode(editor),
+      //@ts-ignore
+      insertDivider(editor),
     ],
     []
   );
@@ -288,6 +296,7 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
           theme={"light"}
           slashMenu={false}
           formattingToolbar={false}
+          sideMenu={false}
         >
           <FormattingToolbarController
             formattingToolbar={() => (
@@ -308,6 +317,15 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
                   } satisfies BlockTypeSelectItem,
                 ]}
               />
+            )}
+          />
+          <SideMenuController
+            sideMenu={(props) => (
+              <SideMenu {...props}>
+                {/* Button which removes the hovered block. */}
+                <RemoveBlockButton {...props} />
+                <DragHandleButton {...props} />
+              </SideMenu>
             )}
           />
           <SuggestionMenuController

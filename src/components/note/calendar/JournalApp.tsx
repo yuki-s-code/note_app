@@ -69,7 +69,7 @@ export const JournalApp = memo(() => {
 
   return (
     <>
-      <div className="flex h-screen">
+      <div className="flex">
         {/* メインコンテンツエリア */}
         <div className="flex flex-col flex-1">
           {/* ヘッダー */}
@@ -99,7 +99,7 @@ export const JournalApp = memo(() => {
           </header>
 
           {/* スクロール可能なメインエリア */}
-          <div className="mt-12 flex-1 overflow-y-auto p-4 hover-scrollbar">
+          <div className="mt-12 flex-1 overflow-y-auto overflow-x-hidden p-4 hover-scrollbar">
             <JournalEditor openRight={openRight} />
           </div>
         </div>

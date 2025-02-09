@@ -55,7 +55,7 @@ export const Root = () => {
                   onPointerEnterCapture
                   onPointerLeaveCapture
                   onClick={openDrawer}
-                  className="opacity-40"
+                  className="opacity-40 relative"
                   variant="text"
                   size="lg"
                 >

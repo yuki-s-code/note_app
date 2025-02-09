@@ -1,8 +1,6 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import {
-  BlockNoteEditor,
   BlockNoteSchema,
-  filterSuggestionItems,
   uploadToTmpFilesDotOrg_DEV_ONLY,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
@@ -10,20 +8,7 @@ import {
 } from "@blocknote/core";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/react/style.css";
-import {
-  BlockTypeSelectItem,
-  DefaultReactSuggestionItem,
-  DragHandleButton,
-  FormattingToolbar,
-  FormattingToolbarController,
-  SideMenu,
-  SideMenuController,
-  SuggestionMenuController,
-  blockTypeSelectItems,
-  getDefaultReactSlashMenuItems,
-  useCreateBlockNote,
-} from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/mantine";
+import { useCreateBlockNote } from "@blocknote/react";
 import { Alert } from "../Alert";
 import { Mention } from "../Mention";
 import { useAppDispatch, useAppSelector } from "@/libs/app/hooks";
@@ -33,30 +18,21 @@ import {
 } from "@/slices/noteSlice";
 import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBlocks";
 import EmojiPicker from "@/components/modals/note/EmojiPicker";
-import {
-  insertAlert,
-  insertBlockQuote,
-  insertCode,
-  insertDivider,
-  insertPDF,
-  insertTimeItem,
-  insertTodayItem,
-  insertTomorrowItem,
-  insertYesterDayItem,
-} from "../insert/InsertCustumItem";
-import { convertToIndexTitles } from "../utils/convertToIndexTItle";
 import { extractMentionedUsers } from "../utils/getData";
 import { useParams } from "react-router-dom";
 import { PDF } from "../PDF";
-import { BlockCode, BlockDivider, BlockQuote } from "../BlockQuote";
+import { BlockDivider, BlockQuote } from "../BlockQuote";
 import {
   ArrowConversionExtension,
   DableLeftConversionExtension,
   DableRightConversionExtension,
 } from "../utils/ArrowConversionExtension";
-import { RiAlertFill, RiDoubleQuotesL } from "react-icons/ri";
-import { RemoveBlockButton } from "../utils/RemoveBlockButton";
-import { notJournalItem } from "../utils/notJournalItem";
+import { BaseEditor } from "../utils/BaseEditor";
+import {
+  multiColumnDropCursor,
+  locales as multiColumnLocales,
+  withMultiColumn,
+} from "@blocknote/xl-multi-column";
 
 export const DrawerEditor = ({ initialContent }: any) => {
   const dispatch = useAppDispatch();
@@ -81,9 +57,6 @@ export const DrawerEditor = ({ initialContent }: any) => {
       ? extractMentionedUsers(initialContent)
       : "";
   }, [initialContent]);
-
-  const mentionLists: any = convertToIndexTitles(notJournalItem(i));
-  // const mentionLists: any = convertToIndexTitles(i);
 
   const onTitleChange = useCallback(
     (t: any) => {
@@ -133,7 +106,7 @@ export const DrawerEditor = ({ initialContent }: any) => {
     [i, mentionId, updateTreeIcon]
   );
 
-  const onContentChange = useCallback((i: any) => {
+  const onChange = useCallback((i: any) => {
     localStorage.setItem("mentionContent", JSON.stringify(i));
     if (timer.current) {
       clearTimeout(timer.current);
@@ -184,71 +157,25 @@ export const DrawerEditor = ({ initialContent }: any) => {
     }, 500);
   }, []);
 
-  const schema = BlockNoteSchema.create({
-    blockSpecs: {
-      // Adds all default blocks.
-      ...defaultBlockSpecs,
-      // Adds the Alert block.
-      alert: Alert,
-      //@ts-ignore
-      blockquote: BlockQuote,
-      //@ts-ignore
-      pdf: PDF,
-      procode: BlockCode,
-      prodivider: BlockDivider,
-    },
-    inlineContentSpecs: {
-      // Adds all default inline content.
-      ...defaultInlineContentSpecs,
-      // Adds the mention tag.
-      mention: Mention,
-    },
-  });
-
-  // List containing all default Slash Menu Items, as well as our custom one.
-  const getCustomSlashMenuItems = useCallback(
-    (editor: BlockNoteEditor): DefaultReactSuggestionItem[] => [
-      //@ts-ignore
-      ...getDefaultReactSlashMenuItems(editor),
-      //@ts-ignore
-      insertTodayItem(editor),
-      //@ts-ignore
-      insertTomorrowItem(editor),
-      //@ts-ignore
-      insertYesterDayItem(editor),
-      //@ts-ignore
-      insertTimeItem(editor),
-      //@ts-ignore
-      insertAlert(editor),
-      //@ts-ignore
-      insertBlockQuote(editor),
-      //@ts-ignore
-      insertPDF(editor),
-      //@ts-ignore
-      insertCode(editor),
-      //@ts-ignore
-      insertDivider(editor),
-    ],
+  const schema = useMemo(
+    () =>
+      withMultiColumn(
+        BlockNoteSchema.create({
+          blockSpecs: {
+            ...defaultBlockSpecs,
+            alert: Alert,
+            blockquote: BlockQuote,
+            pdf: PDF,
+            // procode: BlockCode,
+            prodivider: BlockDivider,
+          },
+          inlineContentSpecs: {
+            ...defaultInlineContentSpecs,
+            mention: Mention,
+          },
+        })
+      ),
     []
-  );
-  const getMentionMenuItems = useCallback(
-    (editor: typeof schema.BlockNoteEditor): DefaultReactSuggestionItem[] => {
-      return mentionLists.map((user: any) => ({
-        title: user.title,
-        onItemClick: () => {
-          editor.insertInlineContent([
-            {
-              type: "mention",
-              props: {
-                user,
-              },
-            },
-            " ", // add a space after the mention
-          ]);
-        },
-      }));
-    },
-    [mentionLists]
   );
 
   const editor = useCreateBlockNote(
@@ -263,7 +190,8 @@ export const DrawerEditor = ({ initialContent }: any) => {
           DableLeftConversionExtension,
         ],
       },
-      dictionary: locales.ja,
+      dropCursor: multiColumnDropCursor,
+      dictionary: { ...locales.ja, multi_column: multiColumnLocales.ja },
     },
     []
   );
@@ -288,60 +216,10 @@ export const DrawerEditor = ({ initialContent }: any) => {
         </>
       </div>
       <div>
-        <BlockNoteView
+        <BaseEditor
           editor={editor}
-          onChange={() => onContentChange(editor.document)}
-          theme={"light"}
-          slashMenu={false}
-          formattingToolbar={false}
-          sideMenu={false}
-        >
-          <FormattingToolbarController
-            formattingToolbar={() => (
-              <FormattingToolbar
-                blockTypeSelectItems={[
-                  ...blockTypeSelectItems(editor.dictionary),
-                  {
-                    name: "注目",
-                    type: "alert",
-                    icon: RiAlertFill,
-                    isSelected: (block: any) => block.type === "alert",
-                  } satisfies BlockTypeSelectItem,
-                  {
-                    name: "引用",
-                    type: "blockquote",
-                    icon: RiDoubleQuotesL,
-                    isSelected: (block: any) => block.type === "blockquote",
-                  } satisfies BlockTypeSelectItem,
-                ]}
-              />
-            )}
-          />
-          <SideMenuController
-            sideMenu={(props) => (
-              <SideMenu {...props}>
-                {/* Button which removes the hovered block. */}
-                <RemoveBlockButton {...props} />
-                <DragHandleButton {...props} />
-              </SideMenu>
-            )}
-          />
-          <SuggestionMenuController
-            triggerCharacter={"/"}
-            // Replaces the default Slash Menu items with our custom ones.
-            getItems={async (query) =>
-              //@ts-ignore
-              filterSuggestionItems(getCustomSlashMenuItems(editor), query)
-            }
-          />
-          <SuggestionMenuController
-            triggerCharacter={"@"}
-            getItems={async (query) =>
-              // Gets the mentions menu items
-              filterSuggestionItems(getMentionMenuItems(editor), query)
-            }
-          />
-        </BlockNoteView>
+          onChange={() => onChange(editor.document)}
+        />
       </div>
     </>
   );

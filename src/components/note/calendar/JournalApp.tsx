@@ -14,7 +14,7 @@ export const JournalApp = memo(() => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Date | null>(new Date());
   const [openRight, setOpenRight] = useState(false);
-  const [calendarWidth, setCalendarWidth] = useState(300); // 初期幅
+  const [calendarWidth, setCalendarWidth] = useState(320); // 初期幅
   const [isResizing, setIsResizing] = useState(false);
   const [startX, setStartX] = useState(0); // ドラッグ開始時のX座標
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -99,7 +99,7 @@ export const JournalApp = memo(() => {
           </header>
 
           {/* スクロール可能なメインエリア */}
-          <div className="mt-12 flex-1 overflow-y-auto overflow-x-hidden p-4 hover-scrollbar">
+          <div className="mt-12 flex-1 overflow-y-auto overflow-x-hidden p-2 hover-scrollbar">
             <JournalEditor openRight={openRight} />
           </div>
         </div>
@@ -108,13 +108,13 @@ export const JournalApp = memo(() => {
         {openRight && (
           <aside
             ref={sidebarRef}
-            className="flex-none transition-width duration-200 z-20 bg-white"
+            className=" flex-none transition-width duration-200 z-20 bg-white"
             style={{ width: calendarWidth }}
           >
             <div className="flex h-full">
               {/* リサイズハンドル */}
               <div
-                className=" w-[2px] bg-gray-300 cursor-ew-resize hover:bg-blue-500 hover:w-[6px] h-full"
+                className="w-[2px] bg-gray-300 cursor-ew-resize hover:bg-blue-500 hover:w-[6px] h-full"
                 onMouseDown={handleMouseDown}
                 onDoubleClick={() => setOpenRight(false)}
                 role="separator"
@@ -122,7 +122,7 @@ export const JournalApp = memo(() => {
                 aria-label="Resize Calendar Sidebar"
               />
               {/* CalendarApp */}
-              <div className="flex-1 overflow-y-auto hover-scrollbar">
+              <div className="flex-1 overflow-y-auto hover-scrollbar p-2">
                 <CalendarApp
                   selected={selected}
                   onSelect={setSelected}

@@ -2,20 +2,8 @@
 
 import { defaultProps } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
-import { Divider, MantineProvider } from "@mantine/core";
-// import ReactCodeMirror from "@uiw/react-codemirror";
-// import { langs } from "@uiw/codemirror-extensions-langs";
-// import { useState } from "react";
-// import {
-//   EditorView,
-//   highlightActiveLine,
-//   highlightActiveLineGutter,
-// } from "@codemirror/view";
-// import {
-//   bracketMatching,
-//   defaultHighlightStyle,
-//   syntaxHighlighting,
-// } from "@codemirror/language";
+import { Box, Divider, MantineProvider, Spoiler } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 
 export const BlockQuote = createReactBlockSpec(
   {
@@ -78,9 +66,10 @@ export const BlockDivider = createReactBlockSpec(
       return (
         <MantineProvider>
           <Divider
-            className=" ml-4 opacity-20 bg-gradient-to-r from-blue-600 to-green-600 h-[2px]"
             my="md"
+            size="sm"
             style={{ width: "100%" }}
+            variant="dashed"
           />
         </MantineProvider>
       );
@@ -88,135 +77,48 @@ export const BlockDivider = createReactBlockSpec(
   }
 );
 
-// BlockCode コンポーネントをおしゃれに＋言語選択機能付き
-// export const BlockCode = createReactBlockSpec(
-//   {
-//     type: "procode",
-//     propSchema: {
-//       language: {
-//         default: "javascript",
-//         values: [
-//           "javascript",
-//           "typescript",
-//           "markdown",
-//           "html",
-//           "css",
-//           "python",
-//           "java",
-//           "cpp",
-//           "ruby",
-//           "go",
-//           "php",
-//           "csharp",
-//           "swift",
-//           "kotlin",
-//           "rust",
-//           "scala",
-//           "perl",
-//           "sql",
-//           "shell",
-//           "json",
-//         ],
-//       },
-//       code: {
-//         default: "",
-//       },
-//     },
-//     content: "none",
-//   },
-//   {
-//     render: (props: any) => {
-//       // ブロックの props から言語とコードを取得
-//       const { language: initLang, code: initCode } = props.block.props;
-//       const [language, setLanguage] = useState<string>(
-//         initLang || "javascript"
-//       );
-//       const [codeValue, setCodeValue] = useState<string>(initCode || "");
+// The Collapsible block.
+export const CollapsibleBlock = createReactBlockSpec(
+  {
+    type: "collapse",
+    propSchema: {
+      textAlignment: defaultProps.textAlignment,
+      textColor: defaultProps.textColor,
+      type: {
+        default: false,
+        values: [true, false],
+      },
+    },
+    content: "inline",
+  },
+  {
+    render: (props) => {
+      const [opened, { toggle }] = useDisclosure(props.block.props.type);
 
-//       // CodeMirror 用の言語拡張のマッピング
-//       const languageExtensions: { [key: string]: any } = {
-//         javascript: langs.javascript(),
-//         typescript: langs.typescript(),
-//         markdown: langs.markdown(),
-//         html: langs.html(),
-//         css: langs.css(),
-//         python: langs.python(),
-//         java: langs.java(),
-//         cpp: langs.cpp(),
-//         ruby: langs.ruby(),
-//         go: langs.go(),
-//         php: langs.php ? langs.php() : null,
-//         csharp: langs.csharp ? langs.csharp() : null,
-//         swift: langs.swift ? langs.swift() : null,
-//         kotlin: langs.kotlin ? langs.kotlin() : null,
-//         rust: langs.rust ? langs.rust() : null,
-//         scala: langs.scala ? langs.scala() : null,
-//         perl: langs.perl ? langs.perl() : null,
-//         sql: langs.sql ? langs.sql() : null,
-//         shell: langs.shell ? langs.shell() : null,
-//         json: langs.json ? langs.json() : null,
-//       };
-
-//       // コード内容変更時の処理
-//       const onInputChange = (value: string) => {
-//         setCodeValue(value);
-//         // BlockNote 側のブロック内容を更新
-//         props.editor.updateBlock(props.block, {
-//           props: { ...props.block.props, code: value },
-//         });
-//       };
-
-//       return (
-//         <MantineProvider>
-//           <div className="w-full mb-4">
-//             {/* ヘッダー：言語選択 */}
-//             <div className="flex justify-between items-center bg-gray-900 text-white px-4 py-2 rounded-t-lg">
-//               <select
-//                 className="bg-gray-800 text-white text-sm font-mono outline-none"
-//                 value={language}
-//                 onChange={(e) => setLanguage(e.target.value)}
-//               >
-//                 {Object.keys(languageExtensions).map((langKey) => (
-//                   <option key={langKey} value={langKey}>
-//                     {langKey.charAt(0).toUpperCase() + langKey.slice(1)}
-//                   </option>
-//                 ))}
-//               </select>
-//             </div>
-//             {/* コードエディター部分 */}
-//             <div className="rounded-b-lg shadow-lg overflow-x-auto">
-//               <ReactCodeMirror
-//                 id={props.block.id}
-//                 autoFocus
-//                 placeholder="コードをここに書いてください..."
-//                 style={{ width: "100%", resize: "vertical" }}
-//                 value={codeValue}
-//                 height="100%"
-//                 width="100%"
-//                 // basicSetup で行番号を有効化、かつ EditorView.lineWrapping を追加
-//                 basicSetup={{ lineNumbers: true }}
-//                 extensions={[
-//                   languageExtensions[language] || langs.javascript(),
-//                   EditorView.lineWrapping,
-//                   syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-//                   bracketMatching(),
-//                   highlightActiveLine(),
-//                   highlightActiveLineGutter(),
-//                 ]}
-//                 theme="dark"
-//                 onChange={(value: string) => onInputChange(value)}
-//               />
-//             </div>
-//           </div>
-//         </MantineProvider>
-//       );
-//     },
-//     toExternalHTML: ({ block }: any) => {
-//       return (
-//         <pre>
-//           <code>{block?.props?.code}</code>
-//         </pre>
-//       );
-//     },
-//   }
-// );
+      return (
+        <MantineProvider>
+          <Box
+            maw={720}
+            className="w-full shadow-md p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+          >
+            <Spoiler
+              className="w-full"
+              onClick={() => {
+                toggle();
+                props.editor.updateBlock(props.block, {
+                  type: "collapse",
+                  props: { type: !opened },
+                });
+              }}
+              maxHeight={100}
+              showLabel="さらに続ける"
+              hideLabel="隠す"
+            >
+              <div className="inline-content" ref={props.contentRef} />
+            </Spoiler>
+          </Box>
+        </MantineProvider>
+      );
+    },
+  }
+);

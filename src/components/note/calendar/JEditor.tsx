@@ -15,7 +15,7 @@ import { useAppDispatch } from "@/libs/app/hooks";
 import { resetCodeState, setAddCodeState } from "@/slices/noteSlice";
 import { JournalMention } from "./JournalMention";
 import { PDF } from "../PDF";
-import { BlockDivider, BlockQuote } from "../BlockQuote";
+import { BlockDivider, BlockQuote, CollapsibleBlock } from "../BlockQuote";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowConversionExtension,
@@ -53,7 +53,7 @@ export const JEditor = ({ initialContent, result, setCodeItem }: any) => {
             alert: Alert,
             blockquote: BlockQuote,
             pdf: PDF,
-            // procode: BlockCode,
+            collapse: CollapsibleBlock,
             prodivider: BlockDivider,
           },
           inlineContentSpecs: {

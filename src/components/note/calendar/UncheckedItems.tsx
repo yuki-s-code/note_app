@@ -1,6 +1,6 @@
 // UncheckedItems.tsx
 
-import React from "react";
+import React, { JSX } from "react";
 import { Error } from "@/components/atoms/fetch/Error";
 import { Loding } from "@/components/atoms/fetch/Loding";
 import { useQueryUncheckedItems } from "@/libs/hooks/noteHook/useQueryFolderBlocks";

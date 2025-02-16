@@ -70,7 +70,7 @@ export const JournalDrawerTop = memo(() => {
           default={{
             x: 840,
             y: 10,
-            width: 300,
+            width: 350,
             height: 600,
           }}
           className=" shadow-xl bg-white overflow-y-auto hover-scrollbar"

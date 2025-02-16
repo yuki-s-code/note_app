@@ -28,7 +28,7 @@ import { selectComplexAllFolder } from "@/slices/noteSlice";
 import {
   insertAlert,
   insertBlockQuote,
-  // insertCode,
+  insertCollapse,
   insertDivider,
   insertPDF,
   insertTimeItem,
@@ -49,8 +49,8 @@ export const BaseEditor = ({ editor, onChange, isChecked }: any) => {
       insertTimeItem(editor),
       insertAlert(editor),
       insertBlockQuote(editor),
+      insertCollapse(editor),
       insertPDF(editor),
-      // insertCode(editor),
       insertDivider(editor),
     ],
     []

@@ -48,23 +48,23 @@ export const Mention = createReactInlineContentSpec(
       };
       const cardStyles = {
         inline: (
-          <span
+          <div
             style={{
               display: "inline-flex",
               alignItems: "center",
             }}
-            className="cursor-pointer p-1 rounded-md hover:bg-gray-100"
+            className="cursor-pointer p-1 rounded-md hover:bg-gray-100 flex"
             onClick={() => getFolder()}
           >
             <VscFileSymlinkFile className="mr-[2px]" />
             {/* アイコンの右側に余白を追加 */}
-            <span
+            <div
               className="border-b-[2px]"
               onClick={() => onClickMention(!open)}
             >
               {props.inlineContent.props.user.title}
-            </span>
-          </span>
+            </div>
+          </div>
         ),
         card: (
           <div

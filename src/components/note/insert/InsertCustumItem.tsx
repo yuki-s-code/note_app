@@ -14,7 +14,8 @@ import {
   insertOrUpdateBlock,
 } from "@blocknote/core";
 import { RiAlertFill, RiDoubleQuotesL, RiFilePdfFill } from "react-icons/ri";
-import { CodeIcon, DivideIcon } from "lucide-react";
+import { TbLayoutBottombarCollapse } from "react-icons/tb";
+import { DivideIcon } from "lucide-react";
 
 export const insertTodayItem = (editor: BlockNoteEditor) => ({
   title: "今日",
@@ -31,7 +32,7 @@ export const insertTodayItem = (editor: BlockNoteEditor) => ({
   aliases: ["today", "td"],
   group: "日付と時間",
   icon: <CgToday />,
-  subtext: "今日の日付を挿入します",
+  subtext: dateNavigation(),
 });
 
 export const insertTomorrowItem = (editor: BlockNoteEditor) => ({
@@ -49,7 +50,7 @@ export const insertTomorrowItem = (editor: BlockNoteEditor) => ({
   aliases: ["tomorrow", "to"],
   group: "日付と時間",
   icon: <CgToday />,
-  subtext: "明日の日付を挿入します",
+  subtext: tomorrowNavigation(),
 });
 
 export const insertYesterDayItem = (editor: BlockNoteEditor) => ({
@@ -67,7 +68,7 @@ export const insertYesterDayItem = (editor: BlockNoteEditor) => ({
   aliases: ["yesterday", "ya"],
   group: "日付と時間",
   icon: <CgToday />,
-  subtext: "昨日の日付を挿入します",
+  subtext: yesterdayNavigation(),
 });
 
 export const insertTimeItem = (editor: BlockNoteEditor) => ({
@@ -85,7 +86,7 @@ export const insertTimeItem = (editor: BlockNoteEditor) => ({
   aliases: ["now", "no"],
   group: "日付と時間",
   icon: <CiTimer />,
-  subtext: "時間を挿入します",
+  subtext: timeNavigation(),
 });
 // Slash menu item to insert an Alert block
 export const insertAlert = (editor: any) => ({
@@ -108,6 +109,20 @@ export const insertAlert = (editor: any) => ({
   icon: <RiAlertFill />,
   subtext: "文を強調したいときに使用",
 });
+// Slash menu item to insert an Alert block
+export const insertCollapse = (editor: any) => ({
+  title: "長文添付",
+  onItemClick: () => {
+    insertOrUpdateBlock(editor, {
+      type: "collapse",
+    });
+  },
+  aliases: ["collapse"],
+  group: "Other",
+  icon: <TbLayoutBottombarCollapse />,
+  subtext: "小論文等の長文を貼り付ける",
+});
+
 // Slash menu item to insert a PDF block
 export const insertPDF = (editor: any) => ({
   title: "PDF",
@@ -133,19 +148,6 @@ export const insertBlockQuote = (editor: any) => ({
   group: "Other",
   icon: <RiDoubleQuotesL />,
   subtext: "引用した文を挿入",
-});
-
-export const insertCode = (editor: any) => ({
-  title: "コード",
-  onItemClick: () => {
-    insertOrUpdateBlock(editor, {
-      type: "procode",
-    });
-  },
-  aliases: ["procode"],
-  group: "Other",
-  icon: <CodeIcon className=" w-4 h-4" />,
-  subtext: "Codeを挿入",
 });
 
 export const insertDivider = (editor: any) => ({

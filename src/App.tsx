@@ -4,7 +4,6 @@ import React, { Suspense } from "react";
 import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
-import "tailwindcss/tailwind.css";
 import { DefaultSkeleton } from "./components/atoms/fetch/DefaultSkeleton";
 import { Toaster } from "react-hot-toast";
 import Board from "./components/board/Board";

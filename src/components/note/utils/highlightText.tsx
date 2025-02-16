@@ -1,6 +1,6 @@
 // highlightText.tsx
 
-import React from "react";
+import React, { JSX } from "react";
 
 /**
  * テキスト内の検索キーワードをハイライトします。

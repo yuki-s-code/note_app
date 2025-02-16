@@ -1,13 +1,14 @@
 // CalendarApp.tsx
 
 import { isSameDay, format } from "date-fns";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, getDefaultClassNames } from "react-day-picker";
+import { ja } from "react-day-picker/locale";
 import { useNavigate, Link } from "react-router-dom";
-import "react-day-picker/dist/style.css";
+import "react-day-picker/style.css";
 import React, { useState } from "react";
 import "./styles.css";
 import { useQueryJournalsByMonth } from "@/libs/hooks/noteHook/useQueryFolderBlocks";
-import { Loding } from "@/components/atoms/fetch/Loding"; // 実際は "Loading" が正しい綴りかもしれません
+import { Loding } from "@/components/atoms/fetch/Loding";
 import { Error } from "@/components/atoms/fetch/Error";
 import { UncheckedItems } from "./UncheckedItems";
 import { Calendar, ListTodo } from "lucide-react";
@@ -21,7 +22,7 @@ export default function CalendarApp({
   handleTodayClick,
 }: any) {
   const navigate = useNavigate();
-
+  const defaultClassNames = getDefaultClassNames();
   // 選択された月を 'yyyy-MM' 形式にフォーマット
   const formattedMonth = format(month, "yyyy-MM");
   // 新しいフックを使用して特定の月のジャーナルを取得
@@ -83,17 +84,20 @@ export default function CalendarApp({
             </Link>
           </div>
           <DayPicker
+            locale={ja}
+            classNames={{
+              today: `bg-blue-100 rounded-full`, // Add a border to today's date
+              selected: `bg-blue-500 border-blue-500 text-white rounded-full`, // Highlight the selected day
+              root: `${defaultClassNames.root}`, // Add a shadow to the root element
+              chevron: `${defaultClassNames.chevron} fill-blue-500`, // Change the color of the chevron
+            }}
             mode="single"
             selected={selected}
-            // 選択時に呼び出す関数
             onSelect={onTheSelect}
             month={month}
             onMonthChange={onMonthChange}
             showOutsideDays
-            // ここで修飾子をまとめて渡す
             modifiers={modifiers}
-            // もしスタイルを当てたいだけなら modifiersStyles にしてもOK
-            // ここではクラス指定の例を示す
             modifiersClassNames={{
               selectedDay: "selected-day",
               hasSchedule: "has-schedule",

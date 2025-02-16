@@ -19,14 +19,14 @@ import {
 } from '../database/bot/bot';
 
 const { NlpManager } = require('node-nlp');
-import PQueue from 'p-queue';
+// import PQueue from 'p-queue';
 
 const expressApp = express.Router();
 
 // --------------------------------------
 // NLP Manager & Training Queue
 // --------------------------------------
-const queue = new PQueue({ concurrency: 2 });
+// const queue = new PQueue({ concurrency: 2 });
 
 const manager = new NlpManager({
   languages: ['ja'],
@@ -41,15 +41,15 @@ const manager = new NlpManager({
  * NLPのトレーニングと保存を行う関数をキューに追加
  */
 const addToTrainingQueue = async () => {
-  if (!queue.isPaused) {
+  // if (!queue.isPaused) {
     // queue が pause されていない場合のみ追加
-    await queue.add(async () => {
+    // await queue.add(async () => {
       await manager.train();
       await manager.save();
       console.log('NLP Manager がトレーニング＆保存されました。');
-    });
+    // });
   }
-};
+// };
 
 /**
  * サーバー起動時にNLPモデルを初期化＆トレーニング
@@ -89,6 +89,7 @@ initializeNLP();
 // --------------------------------------
 
 // すべてのBotを取得（ページネーション対応）
+//@ts-ignore
 expressApp.get('/get_all_bot', async (req, res) => {
   try {
     const { page = 1, limit = 20 }: any = req.query;
@@ -212,6 +213,7 @@ expressApp.post('/update_qa_bot', async (req, res) => {
  * - Bot情報を最初に findOne で取得し、削除実行後に
  *   NLP からもインテントを削除するように修正
  */
+//@ts-ignore
 expressApp.delete('/delete_bot/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -361,6 +363,7 @@ expressApp.post('/update_intent', async (req, res) => {
 // --------------------------------------
 // ユーザーメッセージ（チャット）API
 // --------------------------------------
+//@ts-ignore
 expressApp.get('/api/get_bot_message', async (req, res) => {
   const userMessage = req.query.userMessage as string;
   if (!userMessage) {

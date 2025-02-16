@@ -13,14 +13,11 @@ import {
   defaultBlockSpecs,
   defaultInlineContentSpecs,
   locales,
-  PartialBlock,
-  Block,
 } from "@blocknote/core";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { useParams } from "react-router-dom";
-
 import { useAppDispatch, useAppSelector } from "@/libs/app/hooks";
 import {
   resetCodeState,
@@ -33,11 +30,6 @@ import { useMutateFolderBlocks } from "@/libs/hooks/noteHook/useMutateFolderBloc
 import EmojiPicker from "../modals/note/EmojiPicker";
 import { Alert } from "./Alert";
 import { Mention } from "./Mention";
-import {
-  multiColumnDropCursor,
-  locales as multiColumnLocales,
-  withMultiColumn,
-} from "@blocknote/xl-multi-column";
 import { PDF } from "./PDF";
 import { motion } from "framer-motion";
 import {
@@ -45,13 +37,19 @@ import {
   DableLeftConversionExtension,
   DableRightConversionExtension,
 } from "./utils/ArrowConversionExtension";
-import { BlockDivider, BlockQuote } from "./BlockQuote";
+import { BlockDivider, BlockQuote, CollapsibleBlock } from "./BlockQuote";
 import CharacterCount from "@tiptap/extension-character-count";
 import { DiffNoteViewr } from "./DiffNoteViewr";
 import { formatHTML } from "./utils/formatHTML";
-import { BaseEditor } from "./utils/BaseEditor";
 import { AccordionComponent } from "./utils/Accordion";
-
+import { convertToIndexTitles } from "./utils/convertToIndexTItle";
+import { journalItem, notJournalItem } from "./utils/notJournalItem";
+import { BaseEditor } from "./utils/BaseEditor";
+import {
+  multiColumnDropCursor,
+  locales as multiColumnLocales,
+  withMultiColumn,
+} from "@blocknote/xl-multi-column";
 const limit = 20000;
 
 function Editor({ initialContent, result, setCodeItem }: any) {
@@ -135,7 +133,7 @@ function Editor({ initialContent, result, setCodeItem }: any) {
             alert: Alert,
             blockquote: BlockQuote,
             pdf: PDF,
-            // procode: BlockCode,
+            collapse: CollapsibleBlock,
             prodivider: BlockDivider,
           },
           inlineContentSpecs: {
@@ -159,7 +157,6 @@ function Editor({ initialContent, result, setCodeItem }: any) {
   const editor = useCreateBlockNote(
     {
       schema,
-      sideMenuDetection: "editor",
       initialContent: initialContentParsed,
       uploadFile: uploadToTmpFilesDotOrg_DEV_ONLY,
       _tiptapOptions: {
@@ -176,6 +173,14 @@ function Editor({ initialContent, result, setCodeItem }: any) {
       dictionary: { ...locales.ja, multi_column: multiColumnLocales.ja },
     },
     []
+  );
+
+  const mentionLists = useMemo(
+    () =>
+      isChecked
+        ? convertToIndexTitles(journalItem(i))
+        : convertToIndexTitles(notJournalItem(i)),
+    [i, isChecked]
   );
 
   // 追加: キャラクターカウントとワードカウントの状態管理

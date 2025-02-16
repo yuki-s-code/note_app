@@ -27,7 +27,8 @@ const iconVariants = {
   hover: { scale: 1.2 },
   tap: { scale: 0.9 },
 };
-const limit = 20000;
+const CHARACTER_LIMIT = 20000;
+const SVG_CIRCUMFERENCE = 31.4;
 
 export const AccordionComponent = ({
   editor,
@@ -82,9 +83,15 @@ export const AccordionComponent = ({
   const characterCount =
     editor?._tiptapEditor?.storage.characterCount.characters() || 0;
 
-  const percentage = editor ? Math.round((100 / limit) * characterCount) : 0;
+  const percentage = editor
+    ? Math.round((100 / CHARACTER_LIMIT) * characterCount)
+    : 0;
 
-  const isWarning = characterCount >= limit;
+  const isWarning = characterCount >= CHARACTER_LIMIT;
+
+  // AccordionHeader のクラス分岐処理を整理
+  const headerMarginClass =
+    openAccordion === "journals" ? (mentionId ? "ml-0" : "-ml-32") : "";
 
   return (
     <>
@@ -96,7 +103,7 @@ export const AccordionComponent = ({
 
         <div
           className={`flex items-center text-xs gap-2 ml-2 ${
-            charCount === limit ? "character-count--warning" : ""
+            charCount === CHARACTER_LIMIT ? "character-count--warning" : ""
           }`}
         >
           <svg className=" -mt-1" height="20" width="20" viewBox="0 0 20 20">
@@ -115,7 +122,7 @@ export const AccordionComponent = ({
             <circle r="6" cx="10" cy="10" fill="white" />
           </svg>
           <div>
-            {charCount} / {limit}
+            {charCount} / {CHARACTER_LIMIT}
           </div>
         </div>
         <div className=" ml-4">
@@ -143,7 +150,11 @@ export const AccordionComponent = ({
         initial={{ opacity: 0, y: 20, marginLeft: mentionId ? 0 : 128 }} // Include marginLeft in initial state
         animate={{ opacity: 1, y: 0, marginLeft: mentionId ? 0 : 128 }} // Include marginLeft in animate state
         exit={{ opacity: 0, y: -20, marginLeft: mentionId ? 0 : 128 }} // Include marginLeft in exit state
-        transition={{ duration: 0.5 }} // Animation duration
+        transition={{
+          opacity: { duration: 0.5 },
+          y: { duration: 0.5 },
+          marginLeft: { type: "spring", stiffness: 200, damping: 10 },
+        }}
       >
         <Accordion
           open={open === 0}
@@ -153,7 +164,7 @@ export const AccordionComponent = ({
           onPointerLeaveCapture
         >
           <AccordionHeader
-            className={`text-xs text-gray-400 mt-2 w-10/12 ${openAccordion == "journals" && "-ml-32"}`}
+            className={`text-xs text-gray-400 mt-2 w-10/12 ${headerMarginClass} transition-all duration-300`}
             onClick={() => handleOpen(1)}
             placeholder="true"
             onPointerEnterCapture

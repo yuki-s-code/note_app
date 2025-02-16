@@ -28,7 +28,7 @@ import {
   DableLeftConversionExtension,
   DableRightConversionExtension,
 } from "../utils/ArrowConversionExtension";
-import { BlockDivider, BlockQuote } from "../BlockQuote";
+import { BlockDivider, BlockQuote, CollapsibleBlock } from "../BlockQuote";
 import { BaseEditor } from "../utils/BaseEditor";
 import {
   multiColumnDropCursor,
@@ -165,11 +165,10 @@ export const JournalDrawerEditor = ({ initialContent }: any) => {
         BlockNoteSchema.create({
           blockSpecs: {
             ...defaultBlockSpecs,
-            // @ts-ignore
             alert: Alert,
             blockquote: BlockQuote,
             pdf: PDF,
-            // procode: BlockCode,
+            collapse: CollapsibleBlock,
             prodivider: BlockDivider,
           },
           inlineContentSpecs: {

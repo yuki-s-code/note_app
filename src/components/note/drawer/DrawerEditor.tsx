@@ -21,7 +21,7 @@ import EmojiPicker from "@/components/modals/note/EmojiPicker";
 import { extractMentionedUsers } from "../utils/getData";
 import { useParams } from "react-router-dom";
 import { PDF } from "../PDF";
-import { BlockDivider, BlockQuote } from "../BlockQuote";
+import { BlockDivider, BlockQuote, CollapsibleBlock } from "../BlockQuote";
 import {
   ArrowConversionExtension,
   DableLeftConversionExtension,
@@ -166,7 +166,7 @@ export const DrawerEditor = ({ initialContent }: any) => {
             alert: Alert,
             blockquote: BlockQuote,
             pdf: PDF,
-            // procode: BlockCode,
+            collapse: CollapsibleBlock,
             prodivider: BlockDivider,
           },
           inlineContentSpecs: {

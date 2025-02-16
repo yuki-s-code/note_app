@@ -32,9 +32,7 @@ import {
   BookmarkIcon,
   FileIcon,
   FolderIcon,
-  PrinterIcon,
 } from "lucide-react";
-import ReactToPrint from "react-to-print";
 import toast from "react-hot-toast"; // headless を除去
 import SuccessToast from "../atoms/toast/SuccessToast"; // パスを修正
 import ErrorToast from "../atoms/toast/ErrorToast"; // パスを修正
@@ -66,7 +64,7 @@ export default function LiveBlock() {
       .map((key: any) => ic[key]);
   }, [pageLinkObject, ic]);
 
-  const componentRef: any = useRef();
+  const componentRef: any = useRef(null);
 
   const previousMention: any = useMemo(() => {
     return extractMentionedUsers(
@@ -316,7 +314,7 @@ export default function LiveBlock() {
               <div className="flex">
                 <div className="flex gap-2 mt-2 ml-2">
                   {/* プリンターアイコン */}
-                  <motion.div
+                  {/* <motion.div
                     className="p-1 rounded-xl cursor-pointer text-blue-gray-200 hover:text-blue-gray-400"
                     variants={iconVariants}
                     initial="initial"
@@ -328,7 +326,7 @@ export default function LiveBlock() {
                       trigger={() => <PrinterIcon />}
                       content={() => componentRef.current}
                     />
-                  </motion.div>
+                  </motion.div> */}
                   {/* ブックマークアイコン */}
                   <div className="relative">
                     <Checked />
